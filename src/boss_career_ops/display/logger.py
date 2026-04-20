@@ -39,15 +39,18 @@ def _is_sensitive_key(key: str) -> bool:
 
 class SensitiveFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
-        if isinstance(record.msg, str):
-            record.msg = self._mask_string(record.msg)
-        if isinstance(record.args, dict):
-            record.args = mask_sensitive(record.args)
-        elif isinstance(record.args, tuple):
-            record.args = tuple(
-                mask_sensitive(arg) if isinstance(arg, (dict, str)) else arg
-                for arg in record.args
-            )
+        try:
+            if isinstance(record.msg, str):
+                record.msg = self._mask_string(record.msg)
+            if isinstance(record.args, dict):
+                record.args = mask_sensitive(record.args)
+            elif isinstance(record.args, tuple):
+                record.args = tuple(
+                    mask_sensitive(arg) if isinstance(arg, (dict, str)) else arg
+                    for arg in record.args
+                )
+        except Exception:
+            pass
         return True
 
     def _mask_string(self, s: str) -> str:

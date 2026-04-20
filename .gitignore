@@ -61,3 +61,11 @@ desktop.ini
 # AI Agent 上下文文件（开发辅助，无需上传）
 CLAUDE.md
 GEMINI.md
+.learnings/
+
+# 临时调试脚本
+check_*.py
+diagnose_*.py
+test_pbkdf2_speed.py
+test_single.py
+test/

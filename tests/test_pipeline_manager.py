@@ -107,3 +107,43 @@ class TestPipelineManager:
             pm.add_job("job1", job_name="Second")
             job = pm.get_job("job1")
             assert job["job_name"] == "First"
+
+    def test_nested_context_manager(self, tmp_dir):
+        """测试嵌套 context manager 不会关闭连接"""
+        db = tmp_dir / "test_pipeline.db"
+        pm = PipelineManager(db)
+        with pm:
+            pm.add_job("job1", job_name="Golang工程师")
+            with pm:
+                pm.add_job("job2", job_name="Python工程师")
+                job2 = pm.get_job("job2")
+                assert job2 is not None
+                assert pm._conn is not None
+            assert pm._conn is not None
+            job1 = pm.get_job("job1")
+            assert job1 is not None
+        assert pm._conn is None
+
+    def test_ref_count_reset(self, tmp_dir):
+        """测试引用计数正确归零"""
+        db = tmp_dir / "test_pipeline.db"
+        pm = PipelineManager(db)
+        assert pm._ref_count == 0
+        with pm:
+            assert pm._ref_count == 1
+            with pm:
+                assert pm._ref_count == 2
+            assert pm._ref_count == 1
+        assert pm._ref_count == 0
+
+    def test_multiple_context_managers_same_instance(self, tmp_dir):
+        """测试同一实例多次使用 context manager"""
+        db = tmp_dir / "test_pipeline.db"
+        pm = PipelineManager(db)
+        with pm:
+            pm.add_job("job1")
+        assert pm._conn is None
+        with pm:
+            job = pm.get_job("job1")
+            assert job is not None
+        assert pm._conn is None

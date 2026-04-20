@@ -1,11 +1,10 @@
 import json
-import shutil
 import sqlite3
 import time
 from pathlib import Path
 from typing import Any
 
-from boss_career_ops.config.settings import BCO_HOME, LEGACY_HOME
+from boss_career_ops.config.settings import BCO_HOME
 from boss_career_ops.config.singleton import SingletonMeta
 from boss_career_ops.pipeline.stages import Stage, next_stage
 from boss_career_ops.display.logger import get_logger
@@ -13,23 +12,15 @@ from boss_career_ops.display.logger import get_logger
 logger = get_logger(__name__)
 
 DB_PATH = BCO_HOME / "pipeline.db"
-_LEGACY_DB_PATH = LEGACY_HOME / "pipeline.db"
-
-
-def _migrate_legacy_db():
-    if _LEGACY_DB_PATH.exists() and not DB_PATH.exists():
-        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(str(_LEGACY_DB_PATH), str(DB_PATH))
-        logger.info("已从 %s 迁移 Pipeline 数据到 %s", _LEGACY_DB_PATH, DB_PATH)
 
 
 class PipelineManager(metaclass=SingletonMeta):
 
     def __init__(self, db_path: str | Path | None = None):
-        _migrate_legacy_db()
         self._db_path = Path(db_path) if db_path else DB_PATH
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn: sqlite3.Connection | None = None
+        self._ref_count = 0
 
     def __enter__(self):
         self.open()
@@ -40,6 +31,9 @@ class PipelineManager(metaclass=SingletonMeta):
         return False
 
     def open(self):
+        self._ref_count += 1
+        if self._conn is not None:
+            return
         self._conn = sqlite3.connect(str(self._db_path))
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("""
@@ -60,9 +54,11 @@ class PipelineManager(metaclass=SingletonMeta):
         self._conn.commit()
 
     def close(self):
-        if self._conn:
-            self._conn.close()
-            self._conn = None
+        self._ref_count -= 1
+        if self._ref_count > 0 or self._conn is None:
+            return
+        self._conn.close()
+        self._conn = None
 
     def add_job(self, job_id: str, job_name: str = "", company_name: str = "", salary_desc: str = "", security_id: str = "", data: dict | None = None):
         if not self._conn:

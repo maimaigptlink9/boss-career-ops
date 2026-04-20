@@ -1,6 +1,6 @@
 [project]
 name = "boss-career-ops"
-version = "0.1.1"
+version = "0.2.0"
 description = "BOSS直聘 AI 求职全流程系统 — 搜索、评估、投递、沟通、面试、谈判闭环"
 readme = "README.md"
 license = "MIT"
@@ -27,7 +27,7 @@ dependencies = [
     "rich>=13.0",
     "pyyaml>=6.0",
     "cryptography>=42.0",
-    "browser-cookie3>=0.19",
+    "rookiepy>=0.5.0",
     "aiohttp>=3.9",
     "portalocker>=3.2.0",
 ]

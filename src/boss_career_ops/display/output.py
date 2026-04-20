@@ -54,4 +54,4 @@ def output_error(
         error={"message": message, "code": code},
         hints=hints,
     )
-    print(json.dumps(envelope, ensure_ascii=False, indent=2), file=sys.stderr)
+    print(json.dumps(envelope, ensure_ascii=False, indent=2))

@@ -1,11 +1,10 @@
 import sys
 import importlib
-from pathlib import Path
 
 from boss_career_ops.display.output import output_json, output_error
 from boss_career_ops.config.settings import (
-    Settings, BCO_HOME, CONFIG_DIR, CV_PATH,
-    EXPORTS_DIR, RESUMES_DIR, WATCHES_DIR, LEGACY_HOME,
+    CONFIG_DIR, CV_PATH,
+    EXPORTS_DIR, RESUMES_DIR, WATCHES_DIR,
 )
 
 
@@ -19,7 +18,8 @@ REQUIRED_PACKAGES = [
     "yaml",
     "cryptography",
     "aiohttp",
-    "browser_cookie3",
+    "rookiepy",
+    "portalocker",
 ]
 
 
@@ -116,16 +116,6 @@ def _check_data_dirs() -> list[dict]:
     return results
 
 
-def _check_legacy_migration() -> dict | None:
-    if not LEGACY_HOME.exists():
-        return None
-    return {
-        "name": "旧版目录残留",
-        "ok": False,
-        "detail": f"{LEGACY_HOME} 仍存在，数据已迁移到 {BCO_HOME}，可手动删除旧目录",
-    }
-
-
 def _check_login_status() -> dict:
     try:
         from boss_career_ops.boss.auth.token_store import TokenStore
@@ -157,9 +147,6 @@ def run_doctor():
     checks.append(_check_browser_driver())
     checks.extend(_check_config_files())
     checks.extend(_check_data_dirs())
-    legacy = _check_legacy_migration()
-    if legacy:
-        checks.append(legacy)
     checks.append(_check_login_status())
 
     all_ok = all(c["ok"] for c in checks)

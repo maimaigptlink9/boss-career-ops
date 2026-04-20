@@ -17,7 +17,6 @@ CV_PATH = BCO_HOME / "cv.md"
 EXPORTS_DIR = BCO_HOME / "exports"
 RESUMES_DIR = BCO_HOME / "resumes"
 WATCHES_DIR = BCO_HOME / "watches"
-LEGACY_HOME = Path.home() / ".boss_career_ops"
 
 
 

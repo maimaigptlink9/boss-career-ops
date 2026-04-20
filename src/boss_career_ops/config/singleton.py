@@ -3,7 +3,7 @@ import threading
 
 class SingletonMeta(type):
     _instances: dict[type, object] = {}
-    _lock: threading.Lock = threading.Lock()
+    _lock: threading.RLock = threading.RLock()
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:

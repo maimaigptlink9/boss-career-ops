@@ -50,10 +50,10 @@ class TestOutputJson:
 
 
 class TestOutputError:
-    def test_output_error_prints_stderr(self, capsys):
+    def test_output_error_prints_stdout(self, capsys):
         output_error(command="test", message="error msg", code="ERR")
         captured = capsys.readouterr()
-        parsed = json.loads(captured.err)
+        parsed = json.loads(captured.out)
         assert parsed["ok"] is False
         assert parsed["error"]["message"] == "error msg"
 
