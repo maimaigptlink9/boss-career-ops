@@ -231,3 +231,4 @@ mkdir -p ~/.openclaw/skills/boss-career-ops && cp skills/boss-career-ops.md ~/.o
 ## License
 
 MIT
+# v0.1.1
