@@ -1,8 +1,10 @@
 import click
 
+from boss_career_ops import __version__
+
 
 @click.group()
-@click.version_option(version="0.1.0", prog_name="bco")
+@click.version_option(version=__version__, prog_name="bco")
 def cli():
     """BOSS直聘 AI 求职全流程系统"""
 

@@ -26,11 +26,14 @@ BOSS 直聘 AI 求职全流程系统。通过 `bco` CLI 命令完成从职位发
 bco --version
 ```
 
-- 若命令不存在，提示用户安装：
-  - 推荐：`uv tool install boss-career-ops`
-  - 备选：`pip install boss-career-ops`
-  - 若上述安装失败，可从源码安装：`uv tool install git+https://github.com/maimaigptlink9/boss_career_ops.git`
-  - 安装完成后重新执行本步骤确认
+- 若成功，说明已通过 `uv tool install` 或 `pip install` 全局安装，后续所有命令直接用 `bco <cmd>`
+- 若命令不存在，检查是否为开发模式（当前目录存在 `pyproject.toml` 且包含 `boss-career-ops`）：
+  - 开发模式：使用 `uv run bco <cmd>` 执行所有后续命令
+  - 非开发模式，提示用户安装：
+    - 推荐：`uv tool install boss-career-ops`
+    - 备选：`pip install boss-career-ops`
+    - 若上述安装失败，可从源码安装：`uv tool install git+https://github.com/maimaigptlink9/boss_career_ops.git`
+    - 安装完成后重新执行本步骤确认
 
 ### 第 2 步：环境诊断
 
