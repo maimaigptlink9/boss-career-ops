@@ -197,10 +197,10 @@ auto_action:
 
 ### OpenClaw
 
-将 [skills/boss-career-ops.md](skills/boss-career-ops.md) 放到 OpenClaw 的 skill 目录，Agent 即可自动理解并调用 `bco` 命令：
+将 [skills/boss-career-ops/skill.md](skills/boss-career-ops/skill.md) 放到 OpenClaw 的 skill 目录，Agent 即可自动理解并调用 `bco` 命令：
 
 ```bash
-mkdir -p ~/.openclaw/skills/boss-career-ops && cp skills/boss-career-ops.md ~/.openclaw/skills/boss-career-ops/SKILL.md
+mkdir -p ~/.openclaw/skills/boss-career-ops && cp skills/boss-career-ops/skill.md ~/.openclaw/skills/boss-career-ops/skill.md
 ```
 
 重启 OpenClaw 后，在对话中提到求职相关话题，Agent 会自动按 skill 指引完成安装、登录和操作。
@@ -211,7 +211,7 @@ mkdir -p ~/.openclaw/skills/boss-career-ops && cp skills/boss-career-ops.md ~/.o
 
 ### WorkBuddy
 
-将 [skills/boss-career-ops.md](skills/boss-career-ops.md) 复制到 `~/.workbuddy/skills/boss-career-ops/SKILL.md`，重启 WorkBuddy 即可。
+将 [skills/boss-career-ops/skill.md](skills/boss-career-ops/skill.md) 复制到 `~/.workbuddy/skills/boss-career-ops/skill.md`，重启 WorkBuddy 即可。
 
 ## 安全说明
 
