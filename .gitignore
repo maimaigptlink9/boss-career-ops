@@ -57,3 +57,7 @@ desktop.ini
 
 # Trae IDE 开发配置（开发规划文件，无需上传）
 .trae/
+
+# AI Agent 上下文文件（开发辅助，无需上传）
+CLAUDE.md
+GEMINI.md
