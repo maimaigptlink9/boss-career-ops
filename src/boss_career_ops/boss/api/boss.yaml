@@ -1,0 +1,63 @@
+base_url: "https://www.zhipin.com"
+api_base: "https://www.zhipin.com/wapi/zpgeek"
+
+endpoints:
+  search:
+    path: "/wapi/zpgeek/search/joblist.json"
+    method: GET
+    description: "职位搜索"
+
+  job_detail:
+    path: "/wapi/zpgeek/job/detail.json"
+    method: GET
+    description: "职位详情"
+
+  greet:
+    path: "/wapi/zpgeek/friend/addchatfriend.json"
+    method: POST
+    description: "打招呼"
+
+  apply:
+    path: "/wapi/zpgeek/resume/apply.json"
+    method: POST
+    description: "投递简历"
+
+  chat_list:
+    path: "/wapi/zpgeek/chat/geekHistoryList.json"
+    method: GET
+    description: "聊天列表"
+
+  chat_messages:
+    path: "/wapi/zpgeek/chat/geekChatHistory.json"
+    method: GET
+    description: "聊天消息"
+
+  recommend:
+    path: "/wapi/zpgeek/recommend/job/list.json"
+    method: GET
+    description: "推荐职位"
+
+  exchange_contact:
+    path: "/wapi/zpgeek/friend/exchange.json"
+    method: POST
+    description: "交换联系方式"
+
+  mark_contact:
+    path: "/wapi/zpgeek/friend/mark.json"
+    method: POST
+    description: "标记联系人"
+
+  qr_code:
+    path: "/wapi/zpgeek/qrcode/get.json"
+    method: GET
+    description: "获取登录二维码"
+
+  qr_scan_result:
+    path: "/wapi/zpgeek/qrcode/scanresult.json"
+    method: GET
+    description: "查询扫码结果"
+
+  user_info:
+    path: "/wapi/zpgeek/user/info.json"
+    method: GET
+    description: "用户信息"

@@ -1,0 +1,59 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+.venv/
+.env
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+*.log
+debug.log
+
+.bco/
+.boss_career_ops/  # 旧版目录兼容，数据已迁移到 .bco/
+
+.idea/
+.vscode/
+*.swp
+*.swo
+
+.DS_Store
+Thumbs.db
+
+
+
+# 用户个人数据（防止误提交到 GitHub，实际存储在 ~/.bco/ 下）
+
+# 测试产生的临时文件
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# IDE 特定文件
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# 操作系统文件
+desktop.ini
+
+# 本地缓存和数据库（如果存储在项目目录）
+*.sqlite
+*.sqlite3
+*.db
+
+# Trae IDE 开发配置（开发规划文件，无需上传）
+.trae/

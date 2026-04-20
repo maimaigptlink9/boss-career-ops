@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Boss-Career-Ops Bridge",
+  "version": "1.0.0",
+  "description": "Browser Bridge for Boss-Career-Ops",
+  "permissions": ["activeTab", "cookies", "webNavigation"],
+  "host_permissions": ["https://www.zhipin.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
