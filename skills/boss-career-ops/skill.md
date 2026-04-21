@@ -1,5 +1,6 @@
 ---
 name: "boss-career-ops"
+skill_version: "0.2.0"
 description: "BOSS直聘AI求职全流程CLI工具，覆盖搜索/评估/投递/沟通/面试/谈判闭环。Invoke when user asks about job search, BOSS直聘, 职位搜索, 投递, 打招呼, 面试, 薪资谈判, or any job-hunting operations."
 ---
 
@@ -32,10 +33,53 @@ bco --version
   - 非开发模式，提示用户安装：
     - 推荐：`uv tool install boss-career-ops`
     - 备选：`pip install boss-career-ops`
-    - 若上述安装失败，可从源码安装：`uv tool install git+https://github.com/maimaigptlink9/boss_career_ops.git`
+    - 若上述安装失败，可从源码安装：`uv tool install git+https://github.com/maimaigptlink9/boss-career-ops.git`
     - 安装完成后重新执行本步骤确认
 
-### 第 2 步：环境诊断
+### 第 2 步：检查并更新到最新版本
+
+已安装或开发模式下均需检查版本是否为最新，旧版本可能缺少功能或存在已知 bug。
+
+```bash
+# 检查当前版本
+bco --version
+```
+
+然后查询 PyPI 最新版本并比较：
+
+```bash
+# 方式一（推荐，需 uv）
+uv tool upgrade boss-career-ops --dry-run 2>&1 | findstr "Upgraded"
+
+# 方式二（需 pip）
+pip index versions boss-career-ops 2>nul
+```
+
+- 若当前版本 < 最新版本，执行更新：
+  - uv 安装的：`uv tool upgrade boss-career-ops`
+  - pip 安装的：`pip install --upgrade boss-career-ops`
+  - 源码安装的：`uv tool install --force --reinstall git+https://github.com/maimaigptlink9/boss-career-ops.git`
+  - 开发模式：`git pull && uv sync`
+- 更新完成后重新执行 `bco --version` 确认版本号已更新
+- 若已是最新版本，直接进入下一步
+
+### 第 2.5 步：检查并更新 skill.md
+
+bco 更新后，skill.md 可能也需要同步更新（新命令、新错误码、工作流变更等）。执行：
+
+```bash
+bco skill-update --check
+```
+
+- 输出 `data.remote_version`，Agent 对比本地 skill.md 的 `skill_version`
+- 若本地版本 < 远程版本，执行 `bco skill-update` 获取完整内容：
+  ```bash
+  bco skill-update
+  ```
+  输出的 `data.content` 即为最新 skill.md 全文，Agent 将其写入本地 skill.md 文件
+- 更新后需重启 Agent 会话以加载新 skill
+
+### 第 3 步：环境诊断
 
 ```bash
 bco doctor
@@ -44,7 +88,7 @@ bco doctor
 - 若输出 `ok: false` 且错误提示配置缺失，执行 `bco setup` 初始化，然后重新诊断
 - 配置目录位于 `~/.bco/`（可通过 `BCO_HOME` 环境变量自定义根目录）
 
-### 第 3 步：检查登录态
+### 第 4 步：检查登录态
 
 ```bash
 bco status
@@ -58,14 +102,14 @@ bco status
   - QR/patchright 方式会弹出浏览器窗口，需用户手动扫码或操作
   - Agent 不应跳过此步骤，必须确认登录成功后再继续
 
-### 第 4 步：检查 AI 配置与个人档案
+### 第 5 步：检查 AI 配置与个人档案
 
 ```bash
 bco ai-config --show
 ```
 
 - 若 `configured: false`，执行 `bco ai-config --api-key <key> --base-url <url> --model <model>` 配置 AI 服务
-- AI 配置影响 `chat-summary`、`interview`、`negotiate` 命令，未配置时这些命令会返回 `AI_NOT_CONFIGURED` 错误
+- AI 配置影响 `chat-summary`、`interview`、`negotiate`、`resume` 命令，未配置时这些命令会返回 `AI_NOT_CONFIGURED` 错误或回退到规则逻辑
 
 然后提醒用户编辑个人档案（评估和推荐的核心依赖）：
 
@@ -75,11 +119,11 @@ bco ai-config --show
 **未配置档案的后果**：
 - `evaluate`：4/5 维度退化为固定中低分（2.5~3.0），评估结果无区分度
 - `recommend`：不传城市和关键词参数，返回与用户意向无关的默认推荐
-- `resume`：生成极简简历而非定制简历
+- `resume`：回退到规则逻辑（关键词追加），无法使用 AI 润色
 
 ## 输出协议
 
-所有命令输出 JSON 到 stdout，统一信封格式：
+所有命令输出 JSON，统一信封格式：
 
 ```json
 {
@@ -96,6 +140,16 @@ bco ai-config --show
 - `ok` 字段判断成败
 - 错误信息在 `error.message`（中文）和 `error.code`（英文）
 - `hints.next_actions` 建议下一步操作，应遵循执行
+
+### 编码与文件输出
+
+- **CLI 输出强制 UTF-8**，管道和重定向不会导致中文乱码
+- `bco search` 支持 `-o <file>` 直接写文件，推荐 Agent 使用此方式：
+  ```bash
+  bco search Python --city 深圳 --pages 2 -o output/search.json
+  python -c "import json; d=json.load(open('output/search.json',encoding='utf-8')); print(len(d['data']))"
+  ```
+- 不使用管道（`bco search ... | python -c "..."`），避免 Windows PowerShell 编码问题
 
 ## 评估引擎：5 维评分体系
 
@@ -120,7 +174,7 @@ bco ai-config --show
 ## 核心工作流
 
 ```
-搜索职位 → 5维评估 → 自动/手动决策 → 简历定制 → 打招呼/投递 → 沟通跟进 → 面试准备 → 薪资谈判 → offer
+搜索职位 → 5维评估 → 自动/手动决策 → 简历定制（AI润色） → 上传简历 → 打招呼/投递（浏览器通道） → 沟通跟进 → 面试准备 → 薪资谈判 → offer
 ```
 
 ## 命令完整参考
@@ -133,6 +187,7 @@ bco ai-config --show
 | `bco setup` | 初始化配置（首次使用） | `bco setup` |
 | `bco login` | 登录（4级降级：Cookie→CDP→QR→patchright） | `bco login` |
 | `bco status` | 检查登录态 | `bco status` |
+| `bco skill-update` | 检查远程版本并获取最新 skill.md 内容 | `bco skill-update --check` 或 `bco skill-update` |
 
 ### AI 配置
 
@@ -148,9 +203,12 @@ bco ai-config --show
 
 | 命令 | 说明 | 用法 |
 |------|------|------|
-| `bco search` | 搜索职位 + 8维筛选 + 福利过滤 | `bco search <keyword> --city <city> --welfare <welfare> --page <n> --limit <n> --pages <n>` |
+| `bco search` | 搜索职位 + 8维筛选 + 福利过滤 | `bco search <keyword> --city <city> --welfare <welfare> --page <n> --limit <n> --pages <n> -o <file>` |
+| | 输出到文件（绕过管道编码问题） | `bco search <keyword> -o result.json` |
 | `bco recommend` | 基于个人档案的个性化推荐 | `bco recommend` |
-| `bco evaluate` | 5维评估（单个/批量） | `bco evaluate <security_id>` 或 `bco evaluate --from-search` |
+| `bco evaluate` | 5维评估（单个/批量，规则引擎） | `bco evaluate <security_id>` 或 `bco evaluate --from-search` |
+| `bco ai-evaluate` | AI 增强评估（语义匹配，需 AI 配置） | `bco ai-evaluate [security_id] --detail` |
+| `bco ai-evaluate-batch` | 批量 AI 评估（获取详情+AI 评分，需 AI 配置） | `bco ai-evaluate-batch --limit 10` |
 | `bco auto-action` | 阈值驱动自动执行（无参数） | `bco auto-action` |
 | `bco shortlist` | 精选列表（B级及以上，无参数） | `bco shortlist` |
 
@@ -160,8 +218,10 @@ bco ai-config --show
 |------|------|------|
 | `bco greet` | 打招呼 | `bco greet <security_id> <job_id>` |
 | `bco batch-greet` | 批量打招呼（高斯延迟，最大10个） | `bco batch-greet <keyword> --city <city>` |
-| `bco apply` | 投递简历 | `bco apply <security_id> <job_id>` |
-| `bco resume` | 生成定制简历（MD/PDF） | `bco resume <job_id> --format <md\|pdf>` |
+| `bco apply` | 投递简历（浏览器通道） | `bco apply <security_id> <job_id>` |
+| `bco apply` | 投递前先上传简历再投递 | `bco apply <security_id> <job_id> --resume <job_id>` |
+| `bco resume` | 生成定制简历（AI 润色 + MD/PDF） | `bco resume <job_id> --format <md\|pdf>` |
+| `bco resume` | 生成 PDF 并上传到 BOSS 直聘平台 | `bco resume <job_id> --format pdf --upload` |
 
 ### 聊天管理
 
@@ -216,6 +276,12 @@ bco ai-config --show
 | `ALREADY_GREETED` | 已打过招呼 | 跳过此职位 |
 | `NETWORK_ERROR` | 网络错误 | 重试 |
 | `INVALID_PARAM` | 参数错误 | 修正参数后重试 |
+| `AI_NOT_AVAILABLE` | AI 服务不可用 | 检查 AI 配置或网络，功能回退到规则逻辑 |
+| `JOB_NOT_FOUND` | 职位数据未找到 | 先运行 `bco search` 或提供正确的 security_id |
+| `AI_EVALUATE_ERROR` | AI 评估失败 | 检查 AI 配置，或使用 `bco evaluate` 规则评估 |
+| `AI_BATCH_ERROR` | 批量 AI 评估失败 | 检查 AI 配置和网络 |
+| `RESUME_UPLOAD_ERROR` | 简历上传失败 | 检查浏览器通道，手动上传 |
+| `APPLY_BROWSER_ERROR` | 浏览器通道不可用 | 启动 Chrome CDP：`chrome.exe --remote-debugging-port=9222` |
 
 ## 环境变量
 

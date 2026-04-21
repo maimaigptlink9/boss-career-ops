@@ -1,5 +1,7 @@
 import json
 import io
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 from boss_career_ops.display.output import format_envelope, output_json, output_error, SCHEMA_VERSION
@@ -48,6 +50,24 @@ class TestOutputJson:
         assert parsed["command"] == "test"
         assert parsed["data"]["key"] == "val"
 
+    def test_output_json_to_file(self, tmp_path):
+        out_file = tmp_path / "result.json"
+        output_json(command="search", data=[{"name": "测试职位"}], output=str(out_file))
+        assert out_file.exists()
+        parsed = json.loads(out_file.read_text(encoding="utf-8"))
+        assert parsed["ok"] is True
+        assert parsed["data"][0]["name"] == "测试职位"
+
+    def test_output_json_to_file_creates_parent_dirs(self, tmp_path):
+        out_file = tmp_path / "sub" / "dir" / "result.json"
+        output_json(command="test", data=[], output=str(out_file))
+        assert out_file.exists()
+
+    def test_output_json_no_file_still_prints(self, capsys):
+        output_json(command="test", data="hello")
+        captured = capsys.readouterr()
+        assert "hello" in captured.out
+
 
 class TestOutputError:
     def test_output_error_prints_stdout(self, capsys):
@@ -56,6 +76,14 @@ class TestOutputError:
         parsed = json.loads(captured.out)
         assert parsed["ok"] is False
         assert parsed["error"]["message"] == "error msg"
+
+    def test_output_error_to_file(self, tmp_path):
+        out_file = tmp_path / "error.json"
+        output_error(command="search", message="风控拦截", code="RISK_BLOCKED", output=str(out_file))
+        assert out_file.exists()
+        parsed = json.loads(out_file.read_text(encoding="utf-8"))
+        assert parsed["ok"] is False
+        assert parsed["error"]["message"] == "风控拦截"
 
 
 class TestMaskSensitive:

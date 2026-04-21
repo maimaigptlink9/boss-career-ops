@@ -1,3 +1,10 @@
+import sys
+
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 import click
 
 from boss_career_ops import __version__
@@ -44,10 +51,11 @@ def status():
 @click.option("--page", default=1, type=int, help="起始页码")
 @click.option("--limit", default=15, type=int, help="每页数量")
 @click.option("--pages", default=1, type=int, help="连续获取页数（受 search_max_pages 限制）")
-def search(keyword, city, welfare, page, limit, pages):
+@click.option("-o", "--output", default="", help="输出到文件（绕过管道编码问题）")
+def search(keyword, city, welfare, page, limit, pages, output):
     """搜索职位 + 福利筛选"""
     from boss_career_ops.commands.search import run_search
-    run_search(keyword, city, welfare, page, limit, pages)
+    run_search(keyword, city, welfare, page, limit, pages, output=output or None)
 
 
 @cli.command()
@@ -94,19 +102,21 @@ def batch_greet(keyword, city):
 @cli.command()
 @click.argument("security_id")
 @click.argument("job_id")
-def apply(security_id, job_id):
-    """投递简历"""
+@click.option("--resume", "resume_job_id", default="", help="投递前先上传简历（指定 job_id 生成并上传）")
+def apply(security_id, job_id, resume_job_id):
+    """投递简历（浏览器通道）"""
     from boss_career_ops.commands.apply import run_apply
-    run_apply(security_id, job_id)
+    run_apply(security_id, job_id, resume_job_id)
 
 
 @cli.command()
 @click.argument("job_id")
 @click.option("--format", "fmt", default="md", type=click.Choice(["md", "pdf"]), help="输出格式")
-def resume(job_id, fmt):
+@click.option("--upload", is_flag=True, help="上传简历到 BOSS 直聘平台（需 --format pdf）")
+def resume(job_id, fmt, upload):
     """生成定制简历（MD/PDF）"""
     from boss_career_ops.commands.resume import run_resume
-    run_resume(job_id, fmt)
+    run_resume(job_id, fmt, upload)
 
 
 @cli.command()
@@ -266,3 +276,28 @@ def ai_config(api_key, base_url, model, provider, max_tokens, temperature, show_
     """AI 配置管理"""
     from boss_career_ops.commands.ai_config import run_ai_config
     run_ai_config(api_key, base_url, model, provider, max_tokens, temperature, show_config)
+
+
+@cli.command("ai-evaluate")
+@click.argument("security_id", required=False)
+@click.option("--detail", is_flag=True, help="获取职位详情进行详细评估")
+def ai_evaluate(security_id, detail):
+    """AI 增强评估（使用 AI 进行语义匹配）"""
+    from boss_career_ops.commands.ai_evaluate import run_ai_evaluate
+    run_ai_evaluate(security_id, fetch_detail=detail)
+
+
+@cli.command("skill-update")
+@click.option("--check", "check_only", is_flag=True, help="仅检查远程版本，不输出内容")
+def skill_update(check_only):
+    """检查并获取最新 skill.md"""
+    from boss_career_ops.commands.skill_update import run_skill_update
+    run_skill_update(check_only=check_only)
+
+
+@cli.command("ai-evaluate-batch")
+@click.option("--limit", default=10, type=int, help="最多评估多少个职位")
+def ai_evaluate_batch(limit):
+    """批量 AI 评估（对缓存的搜索结果）"""
+    from boss_career_ops.commands.ai_evaluate_batch import run_ai_evaluate_batch
+    run_ai_evaluate_batch(limit)

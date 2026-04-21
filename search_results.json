@@ -1,0 +1,18 @@
+{
+  "ok": false,
+  "schema_version": "1.0",
+  "command": "search",
+  "data": null,
+  "pagination": null,
+  "error": {
+    "message": "搜索被风控拦截，浏览器通道也失败，请稍后重试或重新登录",
+    "code": "SEARCH_RISK_BLOCKED"
+  },
+  "hints": {
+    "next_actions": [
+      "bco login",
+      "稍后重试",
+      "降低搜索频率"
+    ]
+  }
+}

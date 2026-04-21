@@ -17,6 +17,9 @@ RATE_LIMITED_CODES = {429, 10003}
 RATE_LIMITED_KEYWORDS = {"limit", "频繁", "too many", "rate limit"}
 RISK_CONTROL_KEYWORDS = {"环境存在异常", "访问行为异常", "异常", "风控", "risk"}
 
+# 需要降级到浏览器通道的端点（高风险操作）
+BROWSER_FALLBACK_ENDPOINTS = {"job_detail", "recommend", "user_info"}
+
 DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "Accept": "application/json, text/plain, */*",

@@ -1,5 +1,6 @@
 import json
 import sys
+from pathlib import Path
 from typing import Any
 
 
@@ -26,11 +27,16 @@ def format_envelope(
     return result
 
 
+def _serialize(envelope: dict) -> str:
+    return json.dumps(envelope, ensure_ascii=False, indent=2)
+
+
 def output_json(
     command: str,
     data: Any = None,
     pagination: dict | None = None,
     hints: dict | None = None,
+    output: str | Path | None = None,
 ):
     envelope = format_envelope(
         ok=True,
@@ -39,7 +45,13 @@ def output_json(
         pagination=pagination,
         hints=hints,
     )
-    print(json.dumps(envelope, ensure_ascii=False, indent=2))
+    text = _serialize(envelope)
+    if output:
+        path = Path(output)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    else:
+        print(text)
 
 
 def output_error(
@@ -47,6 +59,7 @@ def output_error(
     message: str,
     code: str,
     hints: dict | None = None,
+    output: str | Path | None = None,
 ):
     envelope = format_envelope(
         ok=False,
@@ -54,4 +67,10 @@ def output_error(
         error={"message": message, "code": code},
         hints=hints,
     )
-    print(json.dumps(envelope, ensure_ascii=False, indent=2))
+    text = _serialize(envelope)
+    if output:
+        path = Path(output)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    else:
+        print(text)

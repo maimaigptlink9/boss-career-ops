@@ -22,6 +22,11 @@ endpoints:
     method: POST
     description: "投递简历"
 
+  upload_resume:
+    path: "/wapi/zpgeek/resume/upload.json"
+    method: POST
+    description: "上传简历（浏览器通道专用）"
+
   chat_list:
     path: "/wapi/zpgeek/chat/geekHistoryList.json"
     method: GET

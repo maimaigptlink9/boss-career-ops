@@ -14,6 +14,7 @@ class TestResumeGenerator:
             settings.cv_content = cv_content
             gen = ResumeGenerator()
             gen._settings = settings
+            gen._ai_provider = None
             return gen
 
     def test_generate_from_profile(self):
@@ -93,3 +94,54 @@ class TestPDFEngine:
         md = "**加粗文本**"
         html = engine._simple_md_to_html(md)
         assert "<strong>加粗文本</strong>" in html
+
+
+class TestAIPolish:
+    def _make_generator(self, cv_content="", profile=None, ai_provider=None):
+        with patch.object(Settings, '__init__', lambda self, *a, **kw: None):
+            settings = Settings()
+            settings.profile = profile or Profile()
+            settings.cv_content = cv_content
+            gen = ResumeGenerator()
+            gen._settings = settings
+            gen._ai_provider = ai_provider
+            return gen
+
+    def test_ai_polish_success(self):
+        mock_provider = MagicMock()
+        mock_provider.chat.return_value = "# 润色后的简历\n\n## 核心技能\n- Python\n- Docker\n- Kubernetes\n\n## 工作经历\n\n资深工程师，5年经验"
+        cv = "# 简历\n\n## 技能\n- Python\n- Go"
+        gen = self._make_generator(cv_content=cv, ai_provider=mock_provider)
+        result = gen.generate({"jobName": "Golang", "brandName": "公司", "skills": "Go,Kubernetes"})
+        assert "润色后的简历" in result
+        mock_provider.chat.assert_called_once()
+
+    def test_ai_polish_fallback_when_not_available(self):
+        cv = "# 简历\n\n## 技能\n- Python\n- Go"
+        gen = self._make_generator(cv_content=cv, ai_provider=None)
+        result = gen.generate({"jobName": "Golang", "brandName": "公司", "skills": "Go,Kubernetes"})
+        assert "定制" in result
+
+    def test_ai_polish_fallback_on_empty_result(self):
+        mock_provider = MagicMock()
+        mock_provider.chat.return_value = ""
+        cv = "# 简历\n\n## 技能\n- Python\n- Go"
+        gen = self._make_generator(cv_content=cv, ai_provider=mock_provider)
+        result = gen.generate({"jobName": "Golang", "brandName": "公司", "skills": "Go,Kubernetes"})
+        assert "定制" in result
+
+    def test_ai_polish_fallback_on_short_result(self):
+        mock_provider = MagicMock()
+        cv = "# 简历\n\n## 技能\n- Python\n- Go\n\n## 工作经历\n\n多年开发经验"
+        mock_provider.chat.return_value = "短"
+        gen = self._make_generator(cv_content=cv, ai_provider=mock_provider)
+        result = gen.generate({"jobName": "Golang", "brandName": "公司"})
+        assert "定制" in result
+
+    def test_ai_polish_fallback_on_exception(self):
+        mock_provider = MagicMock()
+        mock_provider.chat.side_effect = Exception("AI 服务不可用")
+        cv = "# 简历\n\n## 技能\n- Python\n- Go"
+        gen = self._make_generator(cv_content=cv, ai_provider=mock_provider)
+        result = gen.generate({"jobName": "Golang", "brandName": "公司"})
+        assert "定制" in result

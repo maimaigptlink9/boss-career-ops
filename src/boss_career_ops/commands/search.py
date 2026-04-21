@@ -89,7 +89,7 @@ def _search_via_browser(keyword: str, city: str, page: int, page_size: int) -> d
     return None
 
 
-def run_search(keyword: str, city: str, welfare: str, page: int, limit: int, pages: int = 1):
+def run_search(keyword: str, city: str, welfare: str, page: int, limit: int, pages: int = 1, output: str | None = None):
     client = BossClient()
     thresholds = Thresholds()
     rl = thresholds.rate_limit
@@ -111,6 +111,7 @@ def run_search(keyword: str, city: str, welfare: str, page: int, limit: int, pag
                 message=str(e),
                 code=ErrorCode.SEARCH_ERROR,
                 hints={"next_actions": ["bco status", "bco login"]},
+                output=output,
             )
             return
         if resp.get("_risk_blocked"):
@@ -124,6 +125,7 @@ def run_search(keyword: str, city: str, welfare: str, page: int, limit: int, pag
                     message="搜索被风控拦截，浏览器通道也失败，请稍后重试或重新登录",
                     code="SEARCH_RISK_BLOCKED",
                     hints={"next_actions": ["bco login", "稍后重试", "降低搜索频率"]},
+                    output=output,
                 )
                 return
         if resp.get("code") != 0:
@@ -135,6 +137,7 @@ def run_search(keyword: str, city: str, welfare: str, page: int, limit: int, pag
                     message=f"搜索被限流: {error_msg}",
                     code="SEARCH_RATE_LIMITED",
                     hints={"next_actions": ["稍后重试", "降低搜索频率"]},
+                    output=output,
                 )
             else:
                 output_error(
@@ -142,6 +145,7 @@ def run_search(keyword: str, city: str, welfare: str, page: int, limit: int, pag
                     message=error_msg,
                     code=ErrorCode.SEARCH_ERROR,
                     hints={"next_actions": ["bco status"]},
+                    output=output,
                 )
             return
         job_list = resp.get("zpData", {}).get("jobList", [])
@@ -174,4 +178,5 @@ def run_search(keyword: str, city: str, welfare: str, page: int, limit: int, pag
             "total": total,
         },
         hints={"next_actions": ["bco evaluate --from-search", "bco detail <security_id>"]},
+        output=output,
     )

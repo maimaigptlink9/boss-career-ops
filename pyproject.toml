@@ -36,7 +36,7 @@ dependencies = [
 bco = "boss_career_ops.cli.main:cli"
 
 [project.urls]
-Repository = "https://github.com/maimaigptlink9/boss_career_ops"
+Repository = "https://github.com/maimaigptlink9/boss-career-ops"
 
 [build-system]
 requires = ["hatchling"]
