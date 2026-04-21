@@ -98,7 +98,7 @@ def _upload_resume_before_apply(job_id: str) -> dict:
     from boss_career_ops.config.settings import RESUMES_DIR, Settings
 
     client = BossClient()
-    resp = client.get("job_detail", params={"jobId": job_id})
+    resp = client.get("job_detail", params={"securityId": job_id})
     if resp.get("code") != 0:
         return {"ok": False, "message": "获取职位详情失败"}
     job = resp.get("zpData", {}).get("jobInfo", {})

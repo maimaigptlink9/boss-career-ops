@@ -81,7 +81,7 @@ def run_ai_evaluate(security_id: str | None = None, fetch_detail: bool = True):
                 if "scores" in result:
                     pipeline.update_score(
                         job.get("securityId"),
-                        result["total_score"] if "total_score" in result else result["scores"]["匹配度"],
+                        result.get("total_score", result.get("scores", {}).get("匹配度", 2.5)),
                         result["grade"],
                     )
         except Exception as e:

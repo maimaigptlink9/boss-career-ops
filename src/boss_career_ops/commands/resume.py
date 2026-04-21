@@ -22,7 +22,7 @@ def _build_display_name(job: dict, profile) -> str:
 def run_resume(job_id: str, fmt: str, upload: bool = False):
     client = BossClient()
     try:
-        resp = client.get("job_detail", params={"jobId": job_id})
+        resp = client.get("job_detail", params={"securityId": job_id})
         if resp.get("code") != 0:
             output_error(command="resume", message="获取职位详情失败", code="DETAIL_ERROR")
             return
