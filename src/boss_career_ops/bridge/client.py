@@ -19,7 +19,8 @@ class BridgeClient:
 
     def is_available(self) -> bool:
         try:
-            resp = httpx.get(f"{self._bridge_url}/status", timeout=5.0)
+            with httpx.Client(proxy=None) as client:
+                resp = client.get(f"{self._bridge_url}/status", timeout=5.0)
             return resp.status_code == 200
         except Exception:
             return False

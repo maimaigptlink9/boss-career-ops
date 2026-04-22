@@ -3,6 +3,7 @@ import json
 from boss_career_ops.config.settings import Settings
 from boss_career_ops.display.logger import get_logger
 from boss_career_ops.pipeline.manager import PipelineManager
+from boss_career_ops.platform.registry import get_active_adapter
 
 logger = get_logger(__name__)
 
@@ -21,8 +22,6 @@ def get_job_detail(job_id: str) -> dict | None:
 
 def get_chat_messages(security_id: str) -> list[dict]:
     """读取与某联系人的聊天记录"""
-    from boss_career_ops.platform.registry import get_active_adapter
-
     try:
         adapter = get_active_adapter()
         messages = adapter.get_chat_messages(security_id)

@@ -55,7 +55,7 @@ class PlatformAdapter(ABC):
         ...
 
     @abstractmethod
-    def login(self) -> AuthStatus:
+    def login(self, *, profile: str = "") -> AuthStatus:
         ...
 
     @abstractmethod

@@ -1,5 +1,7 @@
 import json
 import asyncio
+import time
+from datetime import datetime, timezone
 from typing import Any
 
 from aiohttp import web, WSMsgType
@@ -12,11 +14,16 @@ logger = get_logger(__name__)
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 18765
 
+REQUIRED_COOKIE_FIELDS = {"wt2"}
+STOKEN_COOKIE_ALIASES = ["stoken", "__zp_stoken__"]
+
 
 class BridgeDaemon:
     def __init__(self, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT):
         self._host = host
         self._port = port
+        self._started_at: float = time.time()
+        self._last_cookie_result: dict | None = None
         self._app = web.Application()
         self._app.router.add_get("/status", self._handle_status)
         self._app.router.add_get("/ws", self._handle_ws)
@@ -24,11 +31,16 @@ class BridgeDaemon:
         self._pending_results: dict[str, asyncio.Future] = {}
 
     async def _handle_status(self, request: web.Request) -> web.Response:
-        return web.json_response({
+        uptime = int(time.time() - self._started_at)
+        result: dict[str, Any] = {
             "ok": True,
             "extensions_connected": len(self._extensions),
             "version": "1.0",
-        })
+            "uptime_seconds": uptime,
+        }
+        if self._last_cookie_result is not None:
+            result["last_cookie_fetch"] = self._last_cookie_result
+        return web.json_response(result)
 
     async def _handle_ws(self, request: web.Request) -> web.WebSocketResponse:
         ws = web.WebSocketResponse()
@@ -57,6 +69,29 @@ class BridgeDaemon:
             logger.info("Chrome 扩展已断开")
         return ws
 
+    def _update_cookie_result(self, result_data: Any) -> None:
+        cookies: dict[str, str] = {}
+        if isinstance(result_data, dict):
+            cookies = result_data
+        elif isinstance(result_data, list):
+            for c in result_data:
+                if isinstance(c, dict) and "name" in c and "value" in c:
+                    cookies[c["name"]] = c["value"]
+
+        missing = []
+        if not cookies.get("wt2"):
+            missing.append("wt2")
+        has_stoken = any(cookies.get(a) for a in STOKEN_COOKIE_ALIASES)
+        if not has_stoken:
+            missing.append("stoken")
+
+        self._last_cookie_result = {
+            "time": datetime.now(timezone.utc).isoformat(),
+            "valid": len(missing) == 0,
+            "cookie_count": len(cookies),
+            "missing": missing,
+        }
+
     async def _process_command(self, data: dict) -> dict:
         cmd_type = data.get("type", "")
         params = data.get("params", {})
@@ -64,7 +99,10 @@ class BridgeDaemon:
         if cmd_type == CommandType.PING.value:
             return {"ok": True, "data": "pong", "id": cmd_id}
         elif cmd_type == CommandType.GET_COOKIES.value:
-            return await self._forward_to_extensions(data)
+            result = await self._forward_to_extensions(data)
+            if result.get("ok") and result.get("data") is not None:
+                self._update_cookie_result(result["data"])
+            return result
         elif cmd_type == CommandType.NAVIGATE.value:
             return await self._forward_to_extensions(data)
         elif cmd_type == CommandType.CLICK.value:

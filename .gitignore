@@ -60,9 +60,14 @@ CLAUDE.md
 GEMINI.md
 .learnings/
 
-# 临时调试脚本
+# 运行产物输出目录
+output/
+
+# 根目录临时脚本（agent 调试产物，禁止提交）
+/*.py
 check_*.py
 diagnose_*.py
-test_pbkdf2_speed.py
-test_single.py
-tests/
+parse_pipeline.py
+search*.py
+result*.json
+search_results*.json

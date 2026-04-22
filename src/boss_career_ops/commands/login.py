@@ -3,9 +3,9 @@ from boss_career_ops.display.error_codes import ErrorCode
 from boss_career_ops.display.output import output_json, output_error
 
 
-def run_login():
+def run_login(profile: str = ""):
     adapter = get_active_adapter()
-    result = adapter.login()
+    result = adapter.login(profile=profile)
     if result.ok:
         output_json(
             command="login",

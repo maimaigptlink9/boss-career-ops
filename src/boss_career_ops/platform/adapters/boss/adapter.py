@@ -80,9 +80,7 @@ class BossAdapter(PlatformAdapter):
         try:
             browser = self._browser
             browser.ensure_connected()
-            from boss_career_ops.boss.auth.token_store import TokenStore
-            token_store = TokenStore()
-            tokens = token_store.load()
+            tokens = self._client._get_cookies()
             if not tokens:
                 return []
             cookies_for_browser = []
@@ -152,9 +150,7 @@ class BossAdapter(PlatformAdapter):
         try:
             browser = self._browser
             browser.ensure_connected()
-            from boss_career_ops.boss.auth.token_store import TokenStore
-            token_store = TokenStore()
-            tokens = token_store.load()
+            tokens = self._client._get_cookies()
             if not tokens:
                 return None
             cookies_for_browser = []
@@ -351,8 +347,8 @@ class BossAdapter(PlatformAdapter):
             data=result,
         )
 
-    def login(self) -> AuthStatus:
-        result = self._auth.login()
+    def login(self, *, profile: str = "") -> AuthStatus:
+        result = self._auth.login(profile=profile)
         if result.get("ok"):
             return AuthStatus(ok=True, message=result.get("message", "登录成功"))
         return AuthStatus(ok=False, message=result.get("message", "登录失败"), missing=[])

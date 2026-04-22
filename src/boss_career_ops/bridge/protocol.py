@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
+from uuid import uuid4
 
 
 class CommandType(str, Enum):
@@ -13,11 +14,15 @@ class CommandType(str, Enum):
     EXECUTE_JS = "execute_js"
 
 
+def _new_id() -> str:
+    return uuid4().hex[:12]
+
+
 @dataclass
 class BridgeCommand:
     type: CommandType
     params: dict[str, Any] = field(default_factory=dict)
-    id: str = ""
+    id: str = field(default_factory=_new_id)
 
 
 @dataclass

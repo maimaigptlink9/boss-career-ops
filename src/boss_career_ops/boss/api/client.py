@@ -48,6 +48,22 @@ class BossClient(metaclass=SingletonMeta):
         self._rate_limit_count = 0
 
     def _get_cookies(self) -> dict[str, str]:
+        try:
+            from boss_career_ops.bridge.client import BridgeClient
+
+            bridge = BridgeClient()
+            if bridge.is_available():
+                cookies = bridge.get_cookies()
+                if cookies:
+                    logger.debug("从 Bridge 获取实时 Cookie 成功")
+                    try:
+                        self._token_store.save(cookies)
+                        logger.debug("Bridge Cookie 已回写 TokenStore")
+                    except Exception:
+                        logger.warning("Bridge Cookie 回写 TokenStore 失败")
+                    return cookies
+        except Exception:
+            pass
         tokens = self._token_store.load()
         if not tokens:
             return {}
@@ -72,9 +88,10 @@ class BossClient(metaclass=SingletonMeta):
         self._last_request_time = time.time()
         time.sleep(delay)
 
-    def _build_headers(self, endpoint_name: str = "", params: dict | None = None) -> dict[str, str]:
+    def _build_headers(self, endpoint_name: str = "", params: dict | None = None, cookies: dict[str, str] | None = None) -> dict[str, str]:
         headers = dict(DEFAULT_HEADERS)
-        cookies = self._get_cookies()
+        if cookies is None:
+            cookies = self._get_cookies()
         if endpoint_name == "search":
             query = ""
             if params and params.get("query"):
@@ -104,14 +121,14 @@ class BossClient(metaclass=SingletonMeta):
         msg = str(resp_data.get("message", ""))
         return any(kw in msg for kw in RISK_CONTROL_KEYWORDS)
 
-    def _inject_stoken(self, params: dict | None) -> dict:
+    def _inject_stoken(self, params: dict | None, cookies: dict[str, str] | None = None) -> dict:
         if params is None:
             params = {}
-        tokens = self._token_store.load()
-        if tokens:
-            stoken = tokens.get("__zp_stoken__", "")
-            if stoken:
-                params["__zp_stoken__"] = stoken
+        if cookies is None:
+            cookies = self._get_cookies()
+        stoken = cookies.get("__zp_stoken__", "")
+        if stoken:
+            params["__zp_stoken__"] = stoken
         return params
 
     def _exponential_backoff_delay(self, attempt: int) -> float:
@@ -128,9 +145,9 @@ class BossClient(metaclass=SingletonMeta):
             from boss_career_ops.boss.browser_client import BrowserClient
 
             browser = BrowserClient()
-            tokens = self._token_store.load()
+            tokens = self._get_cookies()
             if not tokens:
-                logger.warning("无 Token，浏览器通道降级无法注入 Cookie")
+                logger.warning("无 Cookie，浏览器通道降级无法注入 Cookie")
                 return None
 
             cookies_for_browser = []
@@ -206,13 +223,13 @@ class BossClient(metaclass=SingletonMeta):
             raise ValueError(f"未知端点: {endpoint_name}")
         rl = self._thresholds.rate_limit
         max_attempts = rl.retry_max_attempts
-        if ep.method == "GET":
-            params = self._inject_stoken(params)
         for attempt in range(max_attempts):
             self._gaussian_delay()
-            url = self._endpoints.url(endpoint_name)
             cookies = self._get_cookies()
-            headers = self._build_headers(endpoint_name, params)
+            if ep.method == "GET":
+                params = self._inject_stoken(params, cookies=cookies)
+            url = self._endpoints.url(endpoint_name)
+            headers = self._build_headers(endpoint_name, params, cookies=cookies)
             try:
                 with httpx.Client(follow_redirects=True, timeout=30.0) as client:
                     if ep.method == "GET":

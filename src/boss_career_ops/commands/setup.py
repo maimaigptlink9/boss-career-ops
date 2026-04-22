@@ -146,7 +146,6 @@ def run_setup():
                 f"编辑个人信息: {profile_path}",
                 f"编辑简历: {cv_path}",
                 "运行 bco login 登录 BOSS 直聘",
-                "运行 bco ai-config 配置 AI（可选）",
             ]
         },
     )

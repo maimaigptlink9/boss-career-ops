@@ -10,14 +10,13 @@ BOSS 直聘 AI 求职全流程 CLI 工具。覆盖从职位搜索到拿到 offer
 
 - **职位搜索** — 关键词 + 城市 + 福利多维筛选
 - **5 维评估** — 匹配度、薪资、地点、发展、团队自动评分
-- **阈值驱动** — A 级自动投递，B 级自动打招呼，D 级自动跳过
+- **阈值驱动** — batch-greet 内置阈值逻辑，B 级自动打招呼，D 级自动跳过
 - **简历定制** — 根据职位 JD 生成 ATS 友好的 MD/PDF 简历
 - **批量打招呼** — 高斯随机延迟，最大 10 个，防封号
 - **聊天管理** — 消息历史、摘要、标签、导出
 - **求职流水线** — 发现→评估→投递→沟通→面试→offer 全程追踪，所有操作结果自动入库
-- **增量监控** — 定时搜索新职位，不错过机会
 - **面试准备** — 基于职位信息生成面试要点
-- **薪资谈判** — 辅助谈判策略与话术
+- **TUI Dashboard** — 终端可视化求职看板
 
 ## 快速开始
 
@@ -29,6 +28,21 @@ uv tool install boss-career-ops
 
 # 或 pip
 pip install boss-career-ops
+
+# 或从源码安装
+uv tool install git+https://github.com/maimaigptlink9/boss-career-ops.git
+```
+
+**要求：Python >= 3.12**
+
+### 开发模式
+
+```bash
+git clone https://github.com/maimaigptlink9/boss-career-ops.git
+cd boss-career-ops
+uv sync
+uv run bco <cmd>
+uv run pytest
 ```
 
 ### 初始化
@@ -40,7 +54,7 @@ bco doctor
 # 2. 首次使用，初始化配置
 bco setup
 
-# 3. 登录 BOSS 直聘（扫码或自动提取浏览器 Cookie）
+# 3. 登录 BOSS 直聘（自动检测 Chrome Profile，3 级降级）
 bco login
 
 # 4. 确认登录态
@@ -56,17 +70,14 @@ bco search "Golang" --city 广州 --welfare "双休,五险一金"
 # 对搜索结果批量评估
 bco evaluate --from-search
 
-# 阈值驱动自动执行（高分打招呼/投递，低分跳过）
-bco auto-action
+# 批量打招呼（内置阈值逻辑）
+bco batch-greet "Golang" --city 广州
 
 # 生成定制简历
 bco resume <job_id> --format pdf
 
 # 查看求职流水线
 bco pipeline
-
-# 每日摘要
-bco digest
 ```
 
 ## 评估引擎
@@ -99,8 +110,11 @@ bco digest
 |------|------|
 | `bco doctor` | 环境诊断 |
 | `bco setup` | 初始化配置（首次使用） |
-| `bco login` | 登录（3 级降级：Bridge Cookie→CDP→patchright） |
+| `bco login` | 登录（3 级降级：Bridge Cookie→CDP→patchright），支持 `--profile` 指定 Chrome 配置文件 |
 | `bco status` | 检查登录态 |
+| `bco bridge status` | 查看 Bridge Daemon 状态 |
+| `bco bridge test` | Bridge 连通性诊断（3 步检查） |
+| `bco skill-update` | 检查远程版本并获取最新 skill.md 内容 |
 
 ### Agent AI 任务
 
@@ -119,9 +133,7 @@ bco digest
 |------|------|
 | `bco search <keyword> --city <city> --welfare <welfare>` | 搜索职位 + 福利筛选 |
 | `bco recommend` | 个性化推荐 |
-| `bco evaluate <security_id>` 或 `--from-search` | 5 维评估 |
-| `bco auto-action` | 阈值驱动自动执行 |
-| `bco shortlist` | 精选列表（B 级及以上） |
+| `bco evaluate [target]` 或 `--from-search` | 5 维评估 |
 
 ### 投递与沟通
 
@@ -130,7 +142,9 @@ bco digest
 | `bco greet <security_id> <job_id>` | 打招呼 |
 | `bco batch-greet <keyword> --city <city>` | 批量打招呼（最大 10 个） |
 | `bco apply <security_id> <job_id>` | 投递简历 |
+| `bco apply <security_id> <job_id> --resume <job_id>` | 投递前先上传简历再投递 |
 | `bco resume <job_id> --format <md\|pdf>` | 生成定制简历 |
+| `bco resume <job_id> --format pdf --upload` | 生成 PDF 并上传到 BOSS 直聘平台 |
 
 ### 聊天管理
 
@@ -140,33 +154,19 @@ bco digest
 | `bco chatmsg <security_id>` | 聊天消息历史 |
 | `bco chat-summary <security_id>` | 聊天摘要 |
 | `bco mark <security_id> --tag <tag>` | 联系人标签 |
-| `bco exchange <security_id> --type <phone\|wechat>` | 交换联系方式 |
 
-### 流水线与追踪
+### 流水线与导出
 
 | 命令 | 说明 |
 |------|------|
 | `bco pipeline` | 求职流水线追踪（数据来自搜索/评估/投递等操作的自动入库） |
-| `bco follow-up` | 跟进提醒（3 天未推进的职位） |
-| `bco digest` | 每日摘要（新增/评估/投递/待跟进） |
-| `bco shortlist` | 精选列表（B 级及以上） |
-
-### 监控与导出
-
-| 命令 | 说明 |
-|------|------|
-| `bco watch add <name> <keyword> --city <city>` | 添加监控 |
-| `bco watch list` | 列出监控 |
-| `bco watch remove <name>` | 移除监控 |
-| `bco watch run <name>` | 执行监控 |
 | `bco export <keyword> -o <output> --format <csv\|json\|html\|md>` | 多格式导出 |
 
-### 面试与谈判
+### 面试与 Dashboard
 
 | 命令 | 说明 |
 |------|------|
 | `bco interview <job_id>` | 面试准备 |
-| `bco negotiate <job_id>` | 薪资谈判辅助 |
 | `bco dashboard` | 启动 TUI Dashboard |
 
 ## 配置
@@ -202,6 +202,24 @@ auto_action:
   auto_apply_threshold: 4.5    # A 级自动投递
   skip_threshold: 2.0          # D 级及以下直接跳过
   confirm_required: true       # 中间分数段需人工确认
+
+rate_limit:
+  request_delay_min: 1.5       # 请求最小延迟（秒）
+  request_delay_max: 3.0       # 请求最大延迟（秒）
+  batch_greet_max: 10          # 批量打招呼上限
+  batch_greet_delay_min: 2.0   # 批量打招呼最小延迟
+  batch_greet_delay_max: 5.0   # 批量打招呼最大延迟
+  burst_penalty_multiplier: 2.0  # 突发惩罚倍数
+  retry_max_attempts: 3        # 最大重试次数
+  retry_base_delay: 5.0        # 重试基础延迟
+  retry_max_delay: 60.0        # 重试最大延迟
+  search_page_delay_min: 3.0   # 搜索翻页最小延迟
+  search_page_delay_max: 6.0   # 搜索翻页最大延迟
+  search_max_pages: 5          # 搜索最大翻页数
+
+cache:
+  default_ttl: 3600            # 默认缓存 TTL（秒）
+  search_ttl: 1800             # 搜索缓存 TTL（秒）
 ```
 
 ## AI Agent 集成

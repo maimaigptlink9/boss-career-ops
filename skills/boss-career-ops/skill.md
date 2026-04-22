@@ -1,7 +1,7 @@
 ---
 name: "boss-career-ops"
-skill_version: "0.4.0"
-description: "BOSS直聘AI求职全流程CLI工具，覆盖搜索/评估/投递/沟通/面试/谈判闭环。Agent直接编排AI任务（评估/润色/摘要/面试准备），无需外部API。Invoke when user asks about job search, BOSS直聘, 职位搜索, 投递, 打招呼, 面试, 薪资谈判, or any job-hunting operations."
+skill_version: "0.4.1"
+description: "BOSS直聘AI求职全流程CLI工具，覆盖搜索/评估/投递/沟通/面试闭环。Agent直接编排AI任务（评估/润色/摘要/面试准备），无需外部API。Invoke when user asks about job search, BOSS直聘, 职位搜索, 投递, 打招呼, 面试, or any job-hunting operations."
 ---
 
 # Boss-Career-Ops Skill
@@ -99,7 +99,7 @@ bco status
 - 登录方式 3 级降级：Bridge Cookie → CDP → patchright，系统自动选择
 - **登录需要用户交互**，Agent 必须等待用户完成操作：
   - Bridge Cookie 方式：系统自动启动 Daemon 并等待 Chrome 扩展连接，扩展在 Chrome 内部读取 Cookie 绕过 ABE 加密，无需手动操作
-  - CDP 方式需要用户先启动 Chrome：`chrome.exe --remote-debugging-port=9222`
+  - CDP 方式：系统自动检测 Chrome Profile 并启动调试模式，默认选择第一个配置文件；多配置文件时可通过 `bco login --profile <目录名>` 指定；若 Chrome 正在运行则需用户先关闭
   - patchright 方式会弹出浏览器窗口，需用户手动扫码或操作
   - Agent 不应跳过此步骤，必须确认登录成功后再继续
 
@@ -125,7 +125,7 @@ bco status
   "schema_version": "1.0",
   "command": "<command_name>",
   "data": {},
-  "pagination": {"page": 1, "has_more": true, "total": 15},
+  "pagination": {"page": 1, "pages_fetched": 1, "has_more": true, "total": 15},
   "error": null,
   "hints": {"next_actions": ["..."]}
 }
@@ -168,7 +168,7 @@ bco status
 ## 核心工作流
 
 ```
-搜索职位 → 5维评估 → 自动/手动决策 → 简历定制（Agent润色） → 上传简历 → 打招呼/投递（浏览器通道） → 沟通跟进 → 面试准备 → 薪资谈判 → offer
+搜索职位 → 5维评估 → 自动/手动决策 → 简历定制（Agent润色） → 上传简历 → 打招呼/投递（浏览器通道） → 沟通跟进 → 面试准备 → offer
 ```
 
 ## Agent AI 编排
@@ -221,8 +221,9 @@ Agent:
 |------|------|------|
 | `bco doctor` | 环境诊断 | `bco doctor` |
 | `bco setup` | 初始化配置（首次使用） | `bco setup` |
-| `bco login` | 登录（3级降级：Bridge Cookie→CDP→patchright） | `bco login` |
+| `bco login` | 登录（3级降级：Bridge Cookie→CDP→patchright） | `bco login` 或 `bco login --profile <目录名>` |
 | `bco status` | 检查登录态 | `bco status` |
+| `bco bridge` | Bridge Daemon 管理 | 见下方子命令 |
 | `bco skill-update` | 检查远程版本并获取最新 skill.md 内容 | `bco skill-update --check` 或 `bco skill-update` |
 
 ### Agent AI 任务
@@ -231,6 +232,17 @@ Agent:
 |------|------|------|
 | `bco agent-evaluate` | 输出职位数据供 Agent 评估 | `bco agent-evaluate <job_id>` 或 `bco agent-evaluate --stage 发现 --limit 10` |
 | `bco agent-save` | 保存 Agent AI 结果到数据库 | 见下方子命令 |
+
+#### bridge 子命令
+
+| 子命令 | 说明 | 用法 |
+|--------|------|------|
+| `bridge status` | 查看 Bridge Daemon 状态 | `bco bridge status` |
+| `bridge test` | Bridge 连通性诊断（3 步检查） | `bco bridge test` |
+
+- `bridge status` 输出：Daemon 是否运行、Chrome 扩展连接数、上次 Cookie 获取时间及有效性
+- `bridge test` 按步骤诊断：[1/3] Daemon 连通性 → [2/3] Chrome 扩展连接 → [3/3] Cookie 获取
+- 每步失败时停止并输出具体原因和恢复提示
 
 #### agent-save 子命令
 
@@ -245,12 +257,10 @@ Agent:
 
 | 命令 | 说明 | 用法 |
 |------|------|------|
-| `bco search` | 搜索职位 + 8维筛选 + 福利过滤 | `bco search <keyword> --city <city> --welfare <welfare> --page <n> --limit <n> --pages <n> -o <file>` |
+| `bco search` | 搜索职位 + 福利筛选 | `bco search <keyword> --city <city> --welfare <welfare> --page <n> --limit <n> --pages <n> -o <file>` |
 | | 输出到文件（绕过管道编码问题） | `bco search <keyword> -o result.json` |
 | `bco recommend` | 基于个人档案的个性化推荐 | `bco recommend` |
-| `bco evaluate` | 5维评估（单个/批量，规则引擎） | `bco evaluate <security_id>` 或 `bco evaluate --from-search` |
-| `bco auto-action` | 阈值驱动自动执行（无参数） | `bco auto-action` |
-| `bco shortlist` | 精选列表（B级及以上，无参数） | `bco shortlist` |
+| `bco evaluate` | 5维评估（单个/批量，规则引擎） | `bco evaluate [target]` 或 `bco evaluate --from-search` |
 
 ### 投递与沟通
 
@@ -260,7 +270,7 @@ Agent:
 | `bco batch-greet` | 批量打招呼（高斯延迟，最大10个） | `bco batch-greet <keyword> --city <city>` |
 | `bco apply` | 投递简历（浏览器通道） | `bco apply <security_id> <job_id>` |
 | `bco apply` | 投递前先上传简历再投递 | `bco apply <security_id> <job_id> --resume <job_id>` |
-| `bco resume` | 生成定制简历（Agent 润色 + MD/PDF） | `bco resume <job_id> --format <md\|pdf>` |
+| `bco resume` | 生成定制简历（MD/PDF） | `bco resume <job_id> --format <md\|pdf>` |
 | `bco resume` | 生成 PDF 并上传到 BOSS 直聘平台 | `bco resume <job_id> --format pdf --upload` |
 
 ### 聊天管理
@@ -272,32 +282,19 @@ Agent:
 | `bco chatmsg` | 聊天消息历史 | `bco chatmsg <security_id>` |
 | `bco chat-summary` | 聊天摘要（Agent 生成或规则回退） | `bco chat-summary <security_id>` |
 | `bco mark` | 联系人标签 | `bco mark <security_id> --tag <tag>` |
-| `bco exchange` | 交换联系方式 | `bco exchange <security_id> --type <phone\|wechat>` |
 
-### 流水线与追踪
+### 流水线与导出
 
 | 命令 | 说明 | 用法 |
 |------|------|------|
 | `bco pipeline` | 求职流水线追踪（无参数） | `bco pipeline` |
-| `bco follow-up` | 跟进提醒（无参数） | `bco follow-up` |
-| `bco digest` | 每日摘要（无参数） | `bco digest` |
-
-### 监控与导出
-
-| 命令 | 说明 | 用法 |
-|------|------|------|
-| `bco watch add` | 添加监控 | `bco watch add <name> <keyword> --city <city> --welfare <welfare>` |
-| `bco watch list` | 列出监控 | `bco watch list` |
-| `bco watch remove` | 移除监控 | `bco watch remove <name>` |
-| `bco watch run` | 执行监控 | `bco watch run <name>` |
 | `bco export` | 多格式导出 | `bco export <keyword> --city <city> -o <output> --format <csv\|json\|html\|md> --count <n>` |
 
-### 面试与谈判
+### 面试与 Dashboard
 
 | 命令 | 说明 | 用法 |
 |------|------|------|
 | `bco interview` | 面试准备（Agent 生成） | `bco interview <job_id>` |
-| `bco negotiate` | 薪资谈判辅助（Agent 生成） | `bco negotiate <job_id>` |
 | `bco dashboard` | 启动 TUI Dashboard（无参数） | `bco dashboard` |
 
 ## 错误码速查表
@@ -309,16 +306,23 @@ Agent:
 | `AUTH_REQUIRED` | 未登录 | `bco login` |
 | `AUTH_EXPIRED` | 登录过期 | `bco login` |
 | `TOKEN_REFRESH_FAILED` | Token 刷新失败 | `bco login` |
+| `LOGIN_FAILED` | 登录失败 | 检查网络，重试 `bco login` |
 | `RATE_LIMITED` | 频率过高 | 等待后重试 |
 | `ACCOUNT_RISK` | 风控拦截 | 建议用 CDP Chrome 重试：`chrome.exe --remote-debugging-port=9222` |
 | `GREET_LIMIT` | 今日打招呼次数用完 | 告知用户，次日再试 |
 | `ALREADY_GREETED` | 已打过招呼 | 跳过此职位 |
 | `NETWORK_ERROR` | 网络错误 | 重试 |
 | `INVALID_PARAM` | 参数错误 | 修正参数后重试 |
-| `JOB_NOT_FOUND` | 职位数据未找到 | 先运行 `bco search` 或提供正确的 security_id |
-| `AI_RESULT_NOT_FOUND` | Agent AI 结果未找到 | 先运行 `bco agent-evaluate` + `bco agent-save` |
+| `SEARCH_ERROR` | 搜索错误 | 检查参数，重试 |
+| `EVALUATE_ERROR` | 评估错误 | 检查职位数据，重试 |
+| `PARSE_ERROR` | 数据解析错误 | 检查输入格式 |
+| `HOOK_VETO` | Hook 拦截 | 确认操作意图 |
+| `SKIPPED_LOW_SCORE` | 低分跳过 | 正常行为，无需处理 |
+| `CONFIRM_REQUIRED` | 需人工确认 | 提示用户确认 |
+| `BATCH_GREET_ERROR` | 批量打招呼错误 | 检查登录态和参数 |
 | `RESUME_UPLOAD_ERROR` | 简历上传失败 | 检查浏览器通道，手动上传 |
 | `APPLY_BROWSER_ERROR` | 浏览器通道不可用 | 启动 Chrome CDP：`chrome.exe --remote-debugging-port=9222` |
+| `AI_NOT_AVAILABLE` | AI 不可用 | 使用 `bco agent-evaluate` + `bco agent-save` 替代 |
 
 ## 环境变量
 

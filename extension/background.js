@@ -33,7 +33,7 @@ async function handleCommand(data) {
         return { ok: true, data: "pong", id };
 
       case "get_cookies":
-        const cookies = await chrome.cookies.getAll({ domain: ".zhipin.com" });
+        const cookies = await chrome.cookies.getAll({ url: "https://www.zhipin.com/" });
         return { ok: true, data: cookies, id };
 
       case "navigate":

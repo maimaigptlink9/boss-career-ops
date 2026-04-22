@@ -31,10 +31,11 @@ def setup():
 
 
 @cli.command()
-def login():
+@click.option("--profile", default="", help="Chrome 配置文件名（如 Default、Profile 2），默认自动选择")
+def login(profile):
     """登录 BOSS 直聘（3 级降级）"""
     from boss_career_ops.commands.login import run_login
-    run_login()
+    run_login(profile=profile)
 
 
 @cli.command()
@@ -215,6 +216,25 @@ def dashboard():
     """启动 TUI Dashboard"""
     from boss_career_ops.commands.dashboard import run_dashboard
     run_dashboard()
+
+
+@cli.group()
+def bridge():
+    """Bridge Daemon 管理"""
+
+
+@bridge.command("status")
+def bridge_status():
+    """查看 Bridge Daemon 状态"""
+    from boss_career_ops.commands.bridge import run_bridge_status
+    run_bridge_status()
+
+
+@bridge.command("test")
+def bridge_test():
+    """Bridge 连通性诊断"""
+    from boss_career_ops.commands.bridge import run_bridge_test
+    run_bridge_test()
 
 
 @cli.command("skill-update")
