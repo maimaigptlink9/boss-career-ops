@@ -91,5 +91,3 @@ class Thresholds(metaclass=SingletonMeta):
         except Exception as e:
             logger.error("加载阈值配置异常: %s — %s", self._path, e)
 
-    def reload(self):
-        self._load()

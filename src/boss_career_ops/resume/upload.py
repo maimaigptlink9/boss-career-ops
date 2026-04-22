@@ -4,6 +4,7 @@ from pathlib import Path
 
 from boss_career_ops.boss.browser_client import BrowserClient
 from boss_career_ops.bridge.client import BridgeClient
+from boss_career_ops.platform.adapter import PlatformBrowser
 from boss_career_ops.display.error_codes import ErrorCode
 from boss_career_ops.display.logger import get_logger
 
@@ -13,8 +14,13 @@ RESUME_MANAGE_URL = "https://www.zhipin.com/web/geek/resume"
 
 
 class ResumeUploader:
-    def __init__(self, browser: BrowserClient | None = None):
-        self._browser = browser or BrowserClient()
+    def __init__(self, browser: BrowserClient | PlatformBrowser | None = None):
+        if browser is None:
+            self._browser = BrowserClient()
+        elif isinstance(browser, PlatformBrowser):
+            self._browser = browser.inner
+        else:
+            self._browser = browser
 
     def upload(self, pdf_path: Path, display_name: str) -> dict:
         if not pdf_path.exists():
@@ -62,7 +68,7 @@ class ResumeUploader:
             check = bridge.execute_js(file_input_js)
             if not check.ok:
                 return {"ok": False, "message": "简历上传页面未就绪"}
-            return {"ok": True, "message": "Bridge 通道暂不支持文件上传，请使用浏览器通道"}
+            return {"ok": False, "message": "Bridge 通道暂不支持文件上传，请使用浏览器通道"}
         except Exception as e:
             return {"ok": False, "message": str(e)}
 

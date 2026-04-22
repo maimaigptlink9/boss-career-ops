@@ -42,6 +42,11 @@ endpoints:
     method: GET
     description: "推荐职位"
 
+  recommend_v2:
+    path: "/wapi/zprelation/interaction/geekGetJob"
+    method: GET
+    description: "推荐职位（V2，当前网页实际使用）"
+
   exchange_contact:
     path: "/wapi/zpgeek/friend/exchange.json"
     method: POST
@@ -51,16 +56,6 @@ endpoints:
     path: "/wapi/zpgeek/friend/mark.json"
     method: POST
     description: "标记联系人"
-
-  qr_code:
-    path: "/wapi/zpgeek/qrcode/get.json"
-    method: GET
-    description: "获取登录二维码"
-
-  qr_scan_result:
-    path: "/wapi/zpgeek/qrcode/scanresult.json"
-    method: GET
-    description: "查询扫码结果"
 
   user_info:
     path: "/wapi/zpgeek/user/info.json"

@@ -21,26 +21,6 @@ def _parse_frontmatter(content: str) -> dict:
         return {}
 
 
-def _compare_versions(local: str, remote: str) -> int:
-    def _parts(v: str) -> list[int]:
-        try:
-            return [int(x) for x in v.split(".")]
-        except (ValueError, AttributeError):
-            return [0]
-    lp = _parts(local)
-    rp = _parts(remote)
-    for l, r in zip(lp, rp):
-        if l < r:
-            return -1
-        if l > r:
-            return 1
-    if len(lp) < len(rp):
-        return -1
-    if len(lp) > len(rp):
-        return 1
-    return 0
-
-
 def _fetch_remote_skill() -> str | None:
     try:
         resp = httpx.get(SKILL_RAW_URL, timeout=15.0, follow_redirects=True)

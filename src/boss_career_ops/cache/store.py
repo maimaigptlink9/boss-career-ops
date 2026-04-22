@@ -75,35 +75,4 @@ class CacheStore:
         )
         self._conn.commit()
 
-    def delete(self, key: str):
-        if not self._conn:
-            raise RuntimeError("CacheStore 未打开，请使用 context manager")
-        self._conn.execute("DELETE FROM cache WHERE key = ?", (key,))
-        self._conn.commit()
 
-    def clear(self):
-        if not self._conn:
-            raise RuntimeError("CacheStore 未打开，请使用 context manager")
-        self._conn.execute("DELETE FROM cache")
-        self._conn.commit()
-
-    def cleanup_expired(self):
-        if not self._conn:
-            raise RuntimeError("CacheStore 未打开，请使用 context manager")
-        cutoff = time.time()
-        self._conn.execute(
-            "DELETE FROM cache WHERE created_at + ttl < ?", (cutoff,)
-        )
-        self._conn.commit()
-
-    def keys(self, pattern: str | None = None) -> list[str]:
-        if not self._conn:
-            raise RuntimeError("CacheStore 未打开，请使用 context manager")
-        if pattern:
-            sql_pattern = pattern.replace("*", "%").replace("?", "_")
-            cursor = self._conn.execute(
-                "SELECT key FROM cache WHERE key LIKE ?", (sql_pattern,)
-            )
-        else:
-            cursor = self._conn.execute("SELECT key FROM cache")
-        return [row[0] for row in cursor.fetchall()]

@@ -36,3 +36,7 @@ def score_to_grade(score: float) -> str:
 
 def grade_label(grade: str) -> str:
     return GRADE_LABELS.get(grade, "未知")
+
+
+def get_recommendation(grade: str) -> str:
+    return GRADE_LABELS.get(grade, "未知等级")

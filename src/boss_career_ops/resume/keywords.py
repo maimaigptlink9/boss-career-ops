@@ -34,6 +34,7 @@ class KeywordInjector:
         missing = [kw for kw in keywords if kw.lower() not in existing_words]
         if not missing:
             return resume_md
-        injection = "\n\n<!-- ATS 关键词 -->\n"
-        injection += " ".join(missing)
+        injection = '\n\n<div class="ats-keywords">\n'
+        injection += f"<strong>核心技能：</strong>{', '.join(missing)}\n"
+        injection += "</div>"
         return resume_md + injection

@@ -1,55 +1,19 @@
 import re
 from typing import Any
 
-from boss_career_ops.ai.provider import get_provider
 from boss_career_ops.config.settings import Settings
-from boss_career_ops.display.logger import get_logger
-
-logger = get_logger(__name__)
 
 
 class ResumeGenerator:
     def __init__(self):
         self._settings = Settings()
-        self._ai_provider = get_provider()
 
     def generate(self, job: dict) -> str:
         cv = self._settings.cv_content
         profile = self._settings.profile
         if not cv:
-            return self._generate_from_profile(job, profile)
-        if self._ai_provider:
-            polished = self._ai_polish(cv, job)
-            if polished:
-                return polished
-            logger.warning("AI 润色不可用或失败，回退到规则逻辑")
+            return ""
         return self._customize_cv(cv, job, profile)
-
-    def _ai_polish(self, cv_md: str, job: dict) -> str:
-        if not self._ai_provider:
-            return ""
-        jd_text = self._extract_jd_text(job)
-        system_prompt = (
-            "你是一位资深简历顾问，擅长根据目标岗位的职位描述（JD）优化求职者的简历。"
-            "你的原则：1) 突出与JD匹配的经验和技能；2) 尽量量化成果（数字、百分比）；"
-            "3) 将ATS关键词自然融入简历文本；4) 绝不编造不存在的工作经历或技能；"
-            "5) 保持原始简历的结构和章节不变；6) 输出纯Markdown格式，不要添加代码块标记。"
-        )
-        user_prompt = (
-            f"请根据以下目标岗位的JD，润色我的简历。\n\n"
-            f"## 目标岗位JD\n{jd_text}\n\n"
-            f"## 我的原始简历\n{cv_md}\n\n"
-            f"请直接输出润色后的完整简历Markdown，不要解释。"
-        )
-        try:
-            result = self._ai_provider.chat(system=system_prompt, user=user_prompt)
-            if result and len(result.strip()) > len(cv_md) * 0.3:
-                return result.strip()
-            logger.warning("AI 润色结果校验失败（空或过短），回退到规则逻辑")
-            return ""
-        except Exception as e:
-            logger.warning("AI 润色调用失败: %s，回退到规则逻辑", e)
-            return ""
 
     def _customize_cv(self, cv: str, job: dict, profile: Any) -> str:
         jd_text = self._extract_jd_text(job)

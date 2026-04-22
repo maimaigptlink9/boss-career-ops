@@ -2,12 +2,13 @@ import json
 import sqlite3
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 from boss_career_ops.config.settings import BCO_HOME
 from boss_career_ops.config.singleton import SingletonMeta
-from boss_career_ops.pipeline.stages import Stage, next_stage
+from boss_career_ops.pipeline.stages import Stage
 from boss_career_ops.display.logger import get_logger
+from boss_career_ops.platform.models import Job
 
 logger = get_logger(__name__)
 
@@ -52,6 +53,18 @@ class PipelineManager(metaclass=SingletonMeta):
             )
         """)
         self._conn.commit()
+        self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS ai_results (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id     TEXT NOT NULL,
+                task_type  TEXT NOT NULL,
+                result     TEXT NOT NULL,
+                source     TEXT DEFAULT 'agent',
+                created_at REAL NOT NULL,
+                UNIQUE(job_id, task_type)
+            )
+        """)
+        self._conn.commit()
 
     def close(self):
         self._ref_count -= 1
@@ -60,17 +73,18 @@ class PipelineManager(metaclass=SingletonMeta):
         self._conn.close()
         self._conn = None
 
-    def add_job(self, job_id: str, job_name: str = "", company_name: str = "", salary_desc: str = "", security_id: str = "", data: dict | None = None):
-        if not self._conn:
-            raise RuntimeError("PipelineManager 未打开")
-        now = time.time()
-        self._conn.execute(
-            "INSERT OR IGNORE INTO pipeline (job_id, job_name, company_name, salary_desc, stage, security_id, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (job_id, job_name, company_name, salary_desc, Stage.DISCOVERED.value, security_id, json.dumps(data or {}, ensure_ascii=False), now, now),
-        )
-        self._conn.commit()
-
-    def upsert_job(self, job_id: str, job_name: str = "", company_name: str = "", salary_desc: str = "", security_id: str = "", data: dict | None = None):
+    def upsert_job(self, job_or_id: Union[Job, str], job_name: str = "", company_name: str = "", salary_desc: str = "", security_id: str = "", data: dict | None = None):
+        if isinstance(job_or_id, Job):
+            job = job_or_id
+            job_id = job.job_id
+            job_name = job.job_name
+            company_name = job.company_name
+            salary_desc = job.salary_desc
+            security_id = job.security_id
+            if data is None:
+                data = job.raw_data or {}
+        else:
+            job_id = job_or_id
         if not self._conn:
             raise RuntimeError("PipelineManager 未打开")
         now = time.time()
@@ -84,19 +98,20 @@ class PipelineManager(metaclass=SingletonMeta):
         )
         self._conn.commit()
 
-    def batch_add_jobs(self, jobs: list[dict]):
+    def batch_add_jobs(self, jobs: list[Union[Job, dict]]):
         if not self._conn:
             raise RuntimeError("PipelineManager 未打开")
         now = time.time()
         rows = []
         for j in jobs:
+            job = Job.normalize(j)
             rows.append((
-                j.get("encryptJobId", ""),
-                j.get("jobName", ""),
-                j.get("brandName", ""),
-                j.get("salaryDesc", ""),
+                job.job_id,
+                job.job_name,
+                job.company_name,
+                job.salary_desc,
                 Stage.DISCOVERED.value,
-                j.get("securityId", ""),
+                job.security_id,
                 json.dumps({}, ensure_ascii=False),
                 now,
                 now,
@@ -139,20 +154,6 @@ class PipelineManager(metaclass=SingletonMeta):
             (score, grade, time.time(), job_id),
         )
         self._conn.commit()
-
-    def advance_stage(self, job_id: str) -> Stage | None:
-        if not self._conn:
-            raise RuntimeError("PipelineManager 未打开")
-        cursor = self._conn.execute("SELECT stage FROM pipeline WHERE job_id = ?", (job_id,))
-        row = cursor.fetchone()
-        if not row:
-            return None
-        current = Stage(row[0])
-        nxt = next_stage(current)
-        if nxt:
-            self.update_stage(job_id, nxt)
-            return nxt
-        return None
 
     def get_job(self, job_id: str) -> dict | None:
         if not self._conn:
@@ -199,3 +200,41 @@ class PipelineManager(metaclass=SingletonMeta):
             "stale_count": stale_count,
             "total": sum(by_stage.values()),
         }
+
+    def save_ai_result(self, job_id: str, task_type: str, result: str, source: str = "agent"):
+        if not self._conn:
+            raise RuntimeError("PipelineManager 未打开")
+        now = time.time()
+        self._conn.execute(
+            """INSERT INTO ai_results (job_id, task_type, result, source, created_at)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(job_id, task_type) DO UPDATE SET
+                   result = excluded.result,
+                   source = excluded.source,
+                   created_at = excluded.created_at""",
+            (job_id, task_type, result, source, now),
+        )
+        self._conn.commit()
+
+    def get_ai_result(self, job_id: str, task_type: str) -> dict | None:
+        if not self._conn:
+            raise RuntimeError("PipelineManager 未打开")
+        cursor = self._conn.execute(
+            "SELECT id, job_id, task_type, result, source, created_at FROM ai_results WHERE job_id = ? AND task_type = ?",
+            (job_id, task_type),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+        cols = ["id", "job_id", "task_type", "result", "source", "created_at"]
+        return dict(zip(cols, row))
+
+    def get_ai_results(self, job_id: str) -> list[dict]:
+        if not self._conn:
+            raise RuntimeError("PipelineManager 未打开")
+        cursor = self._conn.execute(
+            "SELECT id, job_id, task_type, result, source, created_at FROM ai_results WHERE job_id = ? ORDER BY created_at DESC",
+            (job_id,),
+        )
+        cols = ["id", "job_id", "task_type", "result", "source", "created_at"]
+        return [dict(zip(cols, row)) for row in cursor.fetchall()]

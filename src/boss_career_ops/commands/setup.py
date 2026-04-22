@@ -3,7 +3,7 @@ from pathlib import Path
 
 import yaml
 
-from boss_career_ops.config.settings import BCO_HOME, CONFIG_DIR, CV_PATH, EXPORTS_DIR, RESUMES_DIR, WATCHES_DIR
+from boss_career_ops.config.settings import BCO_HOME, CONFIG_DIR, CV_PATH, EXPORTS_DIR, RESUMES_DIR
 from boss_career_ops.display.output import output_json, output_error
 
 _DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -98,18 +98,29 @@ def run_setup():
     else:
         cv_path.parent.mkdir(parents=True, exist_ok=True)
         cv_path.write_text(
-            "# 个人简历\n\n"
-            "请在此处填写您的完整简历。评估引擎和简历生成器都会读取此文件。\n\n"
-            "越详细，评估越准确。\n\n"
-            "## 基本信息\n\n"
-            "- 姓名：\n- 职位：\n- 工作年限：\n- 学历：\n\n"
-            "## 技能\n\n-\n\n"
-            "## 工作经历\n\n"
-            "### 公司名称 | 职位 | 时间段\n\n-\n\n"
-            "## 项目经历\n\n"
-            "### 项目名称 | 时间段\n\n-\n\n"
-            "## 教育背景\n\n"
-            "### 学校 | 专业 | 学历 | 时间段\n",
+            "# 张三\n"
+            "北京 | zhangsan@email.com | linkedin.com/in/zhangsan | github.com/zhangsan\n\n"
+            "## Professional Summary\n"
+            "[职位] with [X] years of experience in [领域]. Proven track of [关键成就]. Skilled in [前3项技能].\n\n"
+            "## Skills\n"
+            "**Languages:** Python, Go, TypeScript\n"
+            "**Backend:** FastAPI, Django, PostgreSQL, Redis\n"
+            "**Cloud & DevOps:** AWS, Docker, Kubernetes, CI/CD\n"
+            "**Tools:** Git, Linux, Nginx\n\n"
+            "## Experience\n\n"
+            "**高级后端工程师** | XX科技 | 2022.01 – Present\n"
+            "- Led team of 5 engineers building microservices platform serving 2M+ daily requests\n"
+            "- Optimized API response time by 60% through database query tuning and caching strategy\n"
+            "- Implemented CI/CD pipeline reducing deployment time from 2 weeks to 2 days\n\n"
+            "**后端工程师** | YY公司 | 2019.06 – 2021.12\n"
+            "- Developed real-time notification system handling 500K+ concurrent connections\n"
+            "- Reduced infrastructure cost by 35% through auto-scaling optimization\n"
+            "- Mentored 3 junior developers through structured onboarding program\n\n"
+            "## Education\n"
+            "**本科 计算机科学** | XX大学 | 2019\n\n"
+            "## Projects\n"
+            "**开源项目** | github.com/project\n"
+            "- Contributed authentication module to popular framework (500+ GitHub stars)\n",
             encoding="utf-8",
         )
         steps.append({"step": "cv.md", "status": "已创建模板", "path": str(cv_path)})
@@ -117,7 +128,6 @@ def run_setup():
     for dir_label, dir_path in [
         ("exports", EXPORTS_DIR),
         ("resumes", RESUMES_DIR),
-        ("watches", WATCHES_DIR),
     ]:
         if dir_path.exists():
             steps.append({"step": f"{dir_label}/", "status": "已存在，跳过", "path": str(dir_path)})

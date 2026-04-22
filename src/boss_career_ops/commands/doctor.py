@@ -4,7 +4,7 @@ import importlib
 from boss_career_ops.display.output import output_json, output_error
 from boss_career_ops.config.settings import (
     CONFIG_DIR, CV_PATH,
-    EXPORTS_DIR, RESUMES_DIR, WATCHES_DIR,
+    EXPORTS_DIR, RESUMES_DIR,
 )
 
 
@@ -18,7 +18,6 @@ REQUIRED_PACKAGES = [
     "yaml",
     "cryptography",
     "aiohttp",
-    "rookiepy",
     "portalocker",
 ]
 
@@ -77,7 +76,6 @@ def _check_config_files() -> list[dict]:
     results = []
     profile_path = CONFIG_DIR / "profile.yml"
     thresholds_path = CONFIG_DIR / "thresholds.yml"
-    ai_path = CONFIG_DIR / "ai.yml"
     results.append({
         "name": "个人档案 (profile.yml)",
         "ok": profile_path.exists(),
@@ -93,11 +91,6 @@ def _check_config_files() -> list[dict]:
         "ok": CV_PATH.exists(),
         "detail": str(CV_PATH) if CV_PATH.exists() else "不存在，请运行 bco setup",
     })
-    results.append({
-        "name": "AI 配置 (ai.yml)",
-        "ok": ai_path.exists(),
-        "detail": str(ai_path) if ai_path.exists() else "未配置，可运行 bco ai-config",
-    })
     return results
 
 
@@ -106,7 +99,6 @@ def _check_data_dirs() -> list[dict]:
     for label, dir_path in [
         ("导出目录", EXPORTS_DIR),
         ("简历输出目录", RESUMES_DIR),
-        ("监控配置目录", WATCHES_DIR),
     ]:
         results.append({
             "name": f"{label} ({dir_path.name}/)",
@@ -118,10 +110,10 @@ def _check_data_dirs() -> list[dict]:
 
 def _check_login_status() -> dict:
     try:
-        from boss_career_ops.boss.auth.token_store import TokenStore
-        store = TokenStore()
-        tokens = store.load()
-        if tokens and tokens.get("wt2") and any(tokens.get(a) for a in ["stoken", "__zp_stoken__"]):
+        from boss_career_ops.platform.registry import get_active_adapter
+        adapter = get_active_adapter()
+        status = adapter.check_auth_status()
+        if status.ok:
             return {
                 "name": "登录状态",
                 "ok": True,

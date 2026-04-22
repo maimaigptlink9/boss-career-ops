@@ -16,7 +16,6 @@ CONFIG_DIR = BCO_HOME / "config"
 CV_PATH = BCO_HOME / "cv.md"
 EXPORTS_DIR = BCO_HOME / "exports"
 RESUMES_DIR = BCO_HOME / "resumes"
-WATCHES_DIR = BCO_HOME / "watches"
 
 
 
@@ -49,6 +48,7 @@ class Settings(metaclass=SingletonMeta):
         self._cv_path = Path(cv_path) if cv_path else CV_PATH
         self.profile = self._load_profile()
         self.cv_content = self._load_cv()
+        self.platform = self._load_platform()
 
     def _load_profile(self) -> Profile:
         if not self._profile_path.exists():
@@ -96,14 +96,15 @@ class Settings(metaclass=SingletonMeta):
             logger.error("简历文件权限不足: %s — %s", self._cv_path, e)
             raise
 
-    def reload(self):
-        self.profile = self._load_profile()
-        self.cv_content = self._load_cv()
+    def _load_platform(self) -> str:
+        platform_config = CONFIG_DIR / "platform.yml"
+        if platform_config.exists():
+            try:
+                with open(platform_config, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f) or {}
+                return str(data.get("platform", "boss"))
+            except Exception:
+                pass
+        return "boss"
 
-    @property
-    def profile_configured(self) -> bool:
-        return bool(self.profile.name or self.profile.title or self.cv_content)
 
-    @property
-    def cv_configured(self) -> bool:
-        return bool(self.cv_content.strip())

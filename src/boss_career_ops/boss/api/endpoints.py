@@ -56,5 +56,3 @@ class Endpoints:
             raise ValueError(f"未知端点: {name}")
         return f"{self._base_url}{ep.path}"
 
-    def all(self) -> dict[str, Endpoint]:
-        return dict(self._endpoints)

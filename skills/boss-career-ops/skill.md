@@ -1,12 +1,13 @@
 ---
 name: "boss-career-ops"
-skill_version: "0.2.0"
-description: "BOSS直聘AI求职全流程CLI工具，覆盖搜索/评估/投递/沟通/面试/谈判闭环。Invoke when user asks about job search, BOSS直聘, 职位搜索, 投递, 打招呼, 面试, 薪资谈判, or any job-hunting operations."
+skill_version: "0.4.0"
+description: "BOSS直聘AI求职全流程CLI工具，覆盖搜索/评估/投递/沟通/面试/谈判闭环。Agent直接编排AI任务（评估/润色/摘要/面试准备），无需外部API。Invoke when user asks about job search, BOSS直聘, 职位搜索, 投递, 打招呼, 面试, 薪资谈判, or any job-hunting operations."
 ---
 
 # Boss-Career-Ops Skill
 
 BOSS 直聘 AI 求职全流程系统。通过 `bco` CLI 命令完成从职位发现到拿到 offer 的完整闭环。
+AI 任务（评估/润色/摘要/面试准备）由 Agent 直接完成，无需配置外部 LLM API。
 
 核心原则：**AI 评估推荐，人决定行动。系统自动执行高分职位，低分职位需人工确认。**
 
@@ -95,23 +96,16 @@ bco status
 ```
 
 - 若未登录，执行 `bco login` 提示用户登录
-- 登录方式 4 级降级：Cookie提取 → CDP → 二维码 → patchright，系统自动选择
+- 登录方式 3 级降级：Bridge Cookie → CDP → patchright，系统自动选择
 - **登录需要用户交互**，Agent 必须等待用户完成操作：
-  - Cookie 提取方式需要**管理员权限**运行终端
+  - Bridge Cookie 方式：系统自动启动 Daemon 并等待 Chrome 扩展连接，扩展在 Chrome 内部读取 Cookie 绕过 ABE 加密，无需手动操作
   - CDP 方式需要用户先启动 Chrome：`chrome.exe --remote-debugging-port=9222`
-  - QR/patchright 方式会弹出浏览器窗口，需用户手动扫码或操作
+  - patchright 方式会弹出浏览器窗口，需用户手动扫码或操作
   - Agent 不应跳过此步骤，必须确认登录成功后再继续
 
-### 第 5 步：检查 AI 配置与个人档案
+### 第 5 步：检查个人档案
 
-```bash
-bco ai-config --show
-```
-
-- 若 `configured: false`，执行 `bco ai-config --api-key <key> --base-url <url> --model <model>` 配置 AI 服务
-- AI 配置影响 `chat-summary`、`interview`、`negotiate`、`resume` 命令，未配置时这些命令会返回 `AI_NOT_CONFIGURED` 错误或回退到规则逻辑
-
-然后提醒用户编辑个人档案（评估和推荐的核心依赖）：
+提醒用户编辑个人档案（评估和推荐的核心依赖）：
 
 - `~/.bco/config/profile.yml` — 填写技能、期望薪资、偏好城市等结构化信息
 - `~/.bco/cv.md` — 填写完整简历内容（Markdown 格式）
@@ -174,7 +168,49 @@ bco ai-config --show
 ## 核心工作流
 
 ```
-搜索职位 → 5维评估 → 自动/手动决策 → 简历定制（AI润色） → 上传简历 → 打招呼/投递（浏览器通道） → 沟通跟进 → 面试准备 → 薪资谈判 → offer
+搜索职位 → 5维评估 → 自动/手动决策 → 简历定制（Agent润色） → 上传简历 → 打招呼/投递（浏览器通道） → 沟通跟进 → 面试准备 → 薪资谈判 → offer
+```
+
+## Agent AI 编排
+
+AI 任务由 Agent 直接完成，无需配置外部 API。Agent 读取数据 → 思考分析 → 调用工具写入结果。
+
+### 评估流程
+
+```
+Agent:
+  1. bco agent-evaluate <job_id>              # 读取职位数据
+  2. [思考：分析 JD、匹配技能、评估薪资、考虑地点...]
+  3. bco agent-save evaluate --job-id <id> --score 4.2 --grade B --analysis "..."
+```
+
+### 简历润色流程
+
+```
+Agent:
+  1. 读取 ~/.bco/cv.md                        # 原始简历
+  2. bco agent-evaluate <job_id>              # 读取 JD
+  3. [思考：提取 JD 关键词、优化经历描述、注入 ATS 关键词...]
+  4. bco agent-save resume --job-id <id> --content "# 简历\n..."
+  5. bco resume <job_id> --format pdf         # 使用润色内容生成 PDF
+```
+
+### 聊天摘要流程
+
+```
+Agent:
+  1. bco chatmsg <security_id>                # 读取聊天记录
+  2. [思考：总结要点、判断语气、建议下一步...]
+  3. bco agent-save chat-summary --security-id <id> --data '{"summary":"...","sentiment":"positive"}'
+```
+
+### 面试准备流程
+
+```
+Agent:
+  1. bco agent-evaluate <job_id>              # 读取职位+公司信息
+  2. [思考：技术问题、STAR 故事、反问、简历可能被问到的问题...]
+  3. bco agent-save interview-prep --job-id <id> --data '{"tech_questions":[...],"star_stories":[...]}'
 ```
 
 ## 命令完整参考
@@ -185,19 +221,25 @@ bco ai-config --show
 |------|------|------|
 | `bco doctor` | 环境诊断 | `bco doctor` |
 | `bco setup` | 初始化配置（首次使用） | `bco setup` |
-| `bco login` | 登录（4级降级：Cookie→CDP→QR→patchright） | `bco login` |
+| `bco login` | 登录（3级降级：Bridge Cookie→CDP→patchright） | `bco login` |
 | `bco status` | 检查登录态 | `bco status` |
 | `bco skill-update` | 检查远程版本并获取最新 skill.md 内容 | `bco skill-update --check` 或 `bco skill-update` |
 
-### AI 配置
+### Agent AI 任务
 
 | 命令 | 说明 | 用法 |
 |------|------|------|
-| `bco ai-config` | 配置 AI 服务 | `bco ai-config --api-key <key> --base-url <url> --model <model>` |
-| | 配置 Provider 和参数 | `bco ai-config --provider openai_compat --max-tokens 4096 --temperature 0.7` |
-| | 查看当前配置（API Key 脱敏） | `bco ai-config --show` |
+| `bco agent-evaluate` | 输出职位数据供 Agent 评估 | `bco agent-evaluate <job_id>` 或 `bco agent-evaluate --stage 发现 --limit 10` |
+| `bco agent-save` | 保存 Agent AI 结果到数据库 | 见下方子命令 |
 
-支持的参数：`--api-key`、`--base-url`、`--model`、`--provider`、`--max-tokens`、`--temperature`、`--show`
+#### agent-save 子命令
+
+| 子命令 | 说明 | 用法 |
+|--------|------|------|
+| `evaluate` | 保存评估结果 | `bco agent-save evaluate --job-id <id> --score 4.2 --grade B --analysis "..."` |
+| `resume` | 保存简历润色结果 | `bco agent-save resume --job-id <id> --content "# 简历\n..."` |
+| `chat-summary` | 保存聊天摘要 | `bco agent-save chat-summary --security-id <id> --data '{"summary":"..."}'` |
+| `interview-prep` | 保存面试准备 | `bco agent-save interview-prep --job-id <id> --data '{"tech_questions":[...]}'` |
 
 ### 职位搜索与评估
 
@@ -207,8 +249,6 @@ bco ai-config --show
 | | 输出到文件（绕过管道编码问题） | `bco search <keyword> -o result.json` |
 | `bco recommend` | 基于个人档案的个性化推荐 | `bco recommend` |
 | `bco evaluate` | 5维评估（单个/批量，规则引擎） | `bco evaluate <security_id>` 或 `bco evaluate --from-search` |
-| `bco ai-evaluate` | AI 增强评估（语义匹配，需 AI 配置） | `bco ai-evaluate [security_id] --detail` |
-| `bco ai-evaluate-batch` | 批量 AI 评估（获取详情+AI 评分，需 AI 配置） | `bco ai-evaluate-batch --limit 10` |
 | `bco auto-action` | 阈值驱动自动执行（无参数） | `bco auto-action` |
 | `bco shortlist` | 精选列表（B级及以上，无参数） | `bco shortlist` |
 
@@ -220,7 +260,7 @@ bco ai-config --show
 | `bco batch-greet` | 批量打招呼（高斯延迟，最大10个） | `bco batch-greet <keyword> --city <city>` |
 | `bco apply` | 投递简历（浏览器通道） | `bco apply <security_id> <job_id>` |
 | `bco apply` | 投递前先上传简历再投递 | `bco apply <security_id> <job_id> --resume <job_id>` |
-| `bco resume` | 生成定制简历（AI 润色 + MD/PDF） | `bco resume <job_id> --format <md\|pdf>` |
+| `bco resume` | 生成定制简历（Agent 润色 + MD/PDF） | `bco resume <job_id> --format <md\|pdf>` |
 | `bco resume` | 生成 PDF 并上传到 BOSS 直聘平台 | `bco resume <job_id> --format pdf --upload` |
 
 ### 聊天管理
@@ -230,7 +270,7 @@ bco ai-config --show
 | `bco chat` | 聊天列表（不带 --export 时列出所有聊天） | `bco chat` |
 | `bco chat` | 聊天导出 | `bco chat --export <csv\|json\|html\|md>` |
 | `bco chatmsg` | 聊天消息历史 | `bco chatmsg <security_id>` |
-| `bco chat-summary` | 聊天摘要（AI 增强，需 AI 配置） | `bco chat-summary <security_id>` |
+| `bco chat-summary` | 聊天摘要（Agent 生成或规则回退） | `bco chat-summary <security_id>` |
 | `bco mark` | 联系人标签 | `bco mark <security_id> --tag <tag>` |
 | `bco exchange` | 交换联系方式 | `bco exchange <security_id> --type <phone\|wechat>` |
 
@@ -256,8 +296,8 @@ bco ai-config --show
 
 | 命令 | 说明 | 用法 |
 |------|------|------|
-| `bco interview` | 面试准备（AI 增强，需 AI 配置） | `bco interview <job_id>` |
-| `bco negotiate` | 薪资谈判辅助（AI 增强，需 AI 配置） | `bco negotiate <job_id>` |
+| `bco interview` | 面试准备（Agent 生成） | `bco interview <job_id>` |
+| `bco negotiate` | 薪资谈判辅助（Agent 生成） | `bco negotiate <job_id>` |
 | `bco dashboard` | 启动 TUI Dashboard（无参数） | `bco dashboard` |
 
 ## 错误码速查表
@@ -269,17 +309,14 @@ bco ai-config --show
 | `AUTH_REQUIRED` | 未登录 | `bco login` |
 | `AUTH_EXPIRED` | 登录过期 | `bco login` |
 | `TOKEN_REFRESH_FAILED` | Token 刷新失败 | `bco login` |
-| `AI_NOT_CONFIGURED` | AI 未配置 | `bco ai-config --api-key <key>` |
 | `RATE_LIMITED` | 频率过高 | 等待后重试 |
 | `ACCOUNT_RISK` | 风控拦截 | 建议用 CDP Chrome 重试：`chrome.exe --remote-debugging-port=9222` |
 | `GREET_LIMIT` | 今日打招呼次数用完 | 告知用户，次日再试 |
 | `ALREADY_GREETED` | 已打过招呼 | 跳过此职位 |
 | `NETWORK_ERROR` | 网络错误 | 重试 |
 | `INVALID_PARAM` | 参数错误 | 修正参数后重试 |
-| `AI_NOT_AVAILABLE` | AI 服务不可用 | 检查 AI 配置或网络，功能回退到规则逻辑 |
 | `JOB_NOT_FOUND` | 职位数据未找到 | 先运行 `bco search` 或提供正确的 security_id |
-| `AI_EVALUATE_ERROR` | AI 评估失败 | 检查 AI 配置，或使用 `bco evaluate` 规则评估 |
-| `AI_BATCH_ERROR` | 批量 AI 评估失败 | 检查 AI 配置和网络 |
+| `AI_RESULT_NOT_FOUND` | Agent AI 结果未找到 | 先运行 `bco agent-evaluate` + `bco agent-save` |
 | `RESUME_UPLOAD_ERROR` | 简历上传失败 | 检查浏览器通道，手动上传 |
 | `APPLY_BROWSER_ERROR` | 浏览器通道不可用 | 启动 Chrome CDP：`chrome.exe --remote-debugging-port=9222` |
 

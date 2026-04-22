@@ -2,6 +2,8 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+import markdown
+
 from boss_career_ops.display.logger import get_logger
 
 logger = get_logger(__name__)
@@ -26,31 +28,8 @@ class PDFEngine:
             template = self._template_path.read_text(encoding="utf-8")
         except FileNotFoundError:
             template = "<html><body><div id='resume-content'>{{CONTENT}}</div></body></html>"
-        import re
-        html_body = self._simple_md_to_html(md)
+        html_body = markdown.markdown(md, extensions=['tables', 'fenced_code'])
         return template.replace("{{CONTENT}}", html_body)
-
-    def _simple_md_to_html(self, md: str) -> str:
-        lines = md.split("\n")
-        html_lines = []
-        for line in lines:
-            if line.startswith("<!--"):
-                continue
-            if line.startswith("# "):
-                html_lines.append(f"<h1>{line[2:]}</h1>")
-            elif line.startswith("## "):
-                html_lines.append(f"<h2>{line[3:]}</h2>")
-            elif line.startswith("### "):
-                html_lines.append(f"<h3>{line[4:]}</h3>")
-            elif line.startswith("- "):
-                html_lines.append(f"<li>{line[2:]}</li>")
-            elif line.startswith("**") and line.endswith("**"):
-                html_lines.append(f"<p><strong>{line[2:-2]}</strong></p>")
-            elif line.strip():
-                html_lines.append(f"<p>{line}</p>")
-            else:
-                html_lines.append("<br>")
-        return "\n".join(html_lines)
 
     def _html_to_pdf(self, html_content: str, output_path: Path):
         try:

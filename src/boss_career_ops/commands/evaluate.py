@@ -1,12 +1,13 @@
 from boss_career_ops.evaluator.engine import EvaluationEngine
 from boss_career_ops.evaluator.report import generate_report
-from boss_career_ops.boss.api.client import BossClient
+from boss_career_ops.platform.registry import get_active_adapter
 from boss_career_ops.cache.store import CacheStore
 from boss_career_ops.pipeline.manager import PipelineManager
 from boss_career_ops.pipeline.stages import Stage
 from boss_career_ops.display.error_codes import ErrorCode
 from boss_career_ops.display.output import output_json, output_error
 from boss_career_ops.display.logger import get_logger
+import json
 
 logger = get_logger(__name__)
 
@@ -27,31 +28,39 @@ def run_evaluate(target: str | None, from_search: bool):
 
 
 def _evaluate_single(engine: EvaluationEngine, security_id: str):
-    client = BossClient()
+    adapter = get_active_adapter()
     try:
-        resp = client.get("job_detail", params={"securityId": security_id})
-        if resp.get("code") != 0:
+        job = adapter.get_job_detail(security_id)
+        if job is None:
             output_error(command="evaluate", message="获取职位详情失败", code="DETAIL_ERROR")
             return
-        job = resp.get("zpData", {}).get("jobInfo", {})
         result = engine.evaluate(job)
         report = generate_report(result)
+        # 检查 Agent 评估结果
+        if job.job_id:
+            try:
+                with PipelineManager() as pm:
+                    ai_result = pm.get_ai_result(job.job_id, "evaluate")
+                    if ai_result:
+                        ai_data = json.loads(ai_result["result"])
+                        result["agent_score"] = ai_data.get("score")
+                        result["agent_grade"] = ai_data.get("grade")
+                        result["agent_analysis"] = ai_data.get("analysis")
+                        result["agent_scores_detail"] = ai_data.get("scores_detail")
+                        if ai_data.get("score") is not None and ai_data.get("grade"):
+                            result["total_score"] = ai_data["score"]
+                            result["grade"] = ai_data["grade"]
+                            result["source"] = "agent"
+            except Exception as e:
+                logger.warning("读取 Agent 评估结果失败: %s", e)
         try:
             pm = PipelineManager()
             with pm:
-                job_id = job.get("encryptJobId", "")
-                if job_id:
-                    pm.upsert_job(
-                        job_id=job_id,
-                        job_name=job.get("jobName", ""),
-                        company_name=job.get("brandName", ""),
-                        salary_desc=job.get("salaryDesc", ""),
-                        security_id=security_id,
-                        data=job,
-                    )
-                    pm.update_score(job_id, result["total_score"], result["grade"])
-                    pm.update_stage(job_id, Stage.EVALUATED)
-                    pm.update_job_data(job_id, {"evaluate_report": report})
+                if job.job_id:
+                    pm.upsert_job(job)
+                    pm.update_score(job.job_id, result["total_score"], result["grade"])
+                    pm.update_stage(job.job_id, Stage.EVALUATED)
+                    pm.update_job_data(job.job_id, {"evaluate_report": report})
         except Exception as e:
             logger.warning("评估结果写入 Pipeline 失败: %s", e)
         output_json(
@@ -78,27 +87,38 @@ def _evaluate_from_search(engine: EvaluationEngine):
     logger.info("从缓存加载上次搜索结果: %d 条职位", len(jobs))
     if last_params:
         logger.info("上次搜索参数: keyword=%s, city=%s", last_params.get("keyword"), last_params.get("city"))
+    results = []
     try:
         pm = PipelineManager()
         with pm:
             pm.batch_add_jobs(jobs)
+            for job in jobs:
+                result = engine.evaluate(job)
+                try:
+                    job_id = job.job_id if hasattr(job, "job_id") else job.get("encryptJobId", "")
+                    # 检查 Agent 评估结果
+                    if job_id:
+                        try:
+                            ai_result = pm.get_ai_result(job_id, "evaluate")
+                            if ai_result:
+                                ai_data = json.loads(ai_result["result"])
+                                if ai_data.get("score") is not None and ai_data.get("grade"):
+                                    result["total_score"] = ai_data["score"]
+                                    result["grade"] = ai_data["grade"]
+                                    result["source"] = "agent"
+                                    result["agent_analysis"] = ai_data.get("analysis")
+                        except Exception as e:
+                            logger.warning("读取 Agent 评估结果失败: %s", e)
+                    if job_id:
+                        pm.update_score(job_id, result["total_score"], result["grade"])
+                        pm.update_stage(job_id, Stage.EVALUATED)
+                        report = generate_report(result)
+                        pm.update_job_data(job_id, {"evaluate_report": report})
+                except Exception as e:
+                    logger.warning("评估结果写入 Pipeline 失败: %s", e)
+                results.append(result)
     except Exception as e:
-        logger.warning("搜索结果写入 Pipeline 失败: %s", e)
-    results = []
-    for job in jobs:
-        result = engine.evaluate(job)
-        try:
-            pm = PipelineManager()
-            with pm:
-                job_id = job.get("encryptJobId", "")
-                if job_id:
-                    pm.update_score(job_id, result["total_score"], result["grade"])
-                    pm.update_stage(job_id, Stage.EVALUATED)
-                    report = generate_report(result)
-                    pm.update_job_data(job_id, {"evaluate_report": report})
-        except Exception as e:
-            logger.warning("评估结果写入 Pipeline 失败: %s", e)
-        results.append(result)
+        logger.warning("Pipeline 操作失败: %s", e)
     output_json(
         command="evaluate",
         data=results,

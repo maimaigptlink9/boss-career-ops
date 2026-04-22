@@ -114,13 +114,6 @@ class TokenStore(metaclass=SingletonMeta):
         logger.error("Token 解密失败")
         return None
 
-    def clear(self):
-        if TOKEN_FILE.exists():
-            TOKEN_FILE.unlink()
-        if LOCK_FILE.exists():
-            LOCK_FILE.unlink()
-        logger.info("Token 已清除")
-
     def check_quality(self) -> dict:
         tokens = self.load()
         if not tokens:

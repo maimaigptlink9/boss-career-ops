@@ -4,6 +4,8 @@ BOSS 直聘 AI 求职全流程 CLI 工具。覆盖从职位搜索到拿到 offer
 
 **核心原则：AI 评估推荐，人决定行动。系统自动执行高分职位，低分职位需人工确认。**
 
+**AI 编排：AI 任务（评估/润色/摘要/面试准备）由 Agent 直接完成，无需配置外部 LLM API。**
+
 ## 功能概览
 
 - **职位搜索** — 关键词 + 城市 + 福利多维筛选
@@ -97,8 +99,19 @@ bco digest
 |------|------|
 | `bco doctor` | 环境诊断 |
 | `bco setup` | 初始化配置（首次使用） |
-| `bco login` | 登录（4 级降级：Cookie→CDP→QR→patchright） |
+| `bco login` | 登录（3 级降级：Bridge Cookie→CDP→patchright） |
 | `bco status` | 检查登录态 |
+
+### Agent AI 任务
+
+| 命令 | 说明 |
+|------|------|
+| `bco agent-evaluate <job_id>` | 输出职位数据供 Agent 评估 |
+| `bco agent-evaluate --stage 发现 --limit 10` | 输出待评估职位列表 |
+| `bco agent-save evaluate --job-id <id> --score <n> --grade <G> --analysis "..."` | 保存评估结果 |
+| `bco agent-save resume --job-id <id> --content "..."` | 保存简历润色结果 |
+| `bco agent-save chat-summary --security-id <id> --data '...'` | 保存聊天摘要 |
+| `bco agent-save interview-prep --job-id <id> --data '...'` | 保存面试准备 |
 
 ### 职位搜索与评估
 
@@ -193,25 +206,41 @@ auto_action:
 
 ## AI Agent 集成
 
-本工具专为 AI Agent 设计，支持 OpenClaw、Claude Code、WorkBuddy 等。
+本工具专为 AI Agent 设计，AI 任务由 Agent 直接完成，无需配置外部 LLM API。
 
-### OpenClaw
+### 工作原理
 
-将 [skills/boss-career-ops/skill.md](skills/boss-career-ops/skill.md) 放到 OpenClaw 的 skill 目录，Agent 即可自动理解并调用 `bco` 命令：
+```
+Agent 读取数据（bco agent-evaluate / bco chatmsg）
+  → Agent 思考分析（评估/润色/摘要/面试准备）
+  → Agent 写入结果（bco agent-save）
+  → 后续命令读取 Agent 结果（bco evaluate / bco resume / bco interview）
+```
+
+### Agent 工具命令
+
+- `bco agent-evaluate` — 输出职位数据供 Agent 评估分析
+- `bco agent-save` — 保存 Agent 的 AI 分析结果到数据库
+
+### Skill 集成
+
+将 [skills/boss-career-ops/skill.md](skills/boss-career-ops/skill.md) 放到对应 Agent 的 skill 目录即可自动理解并调用 `bco` 命令：
+
+**OpenClaw：**
 
 ```bash
 mkdir -p ~/.openclaw/skills/boss-career-ops && cp skills/boss-career-ops/skill.md ~/.openclaw/skills/boss-career-ops/skill.md
 ```
 
-重启 OpenClaw 后，在对话中提到求职相关话题，Agent 会自动按 skill 指引完成安装、登录和操作。
+**Claude Code：**
 
-### Claude Code
+在项目目录中打开 Claude Code，`CLAUDE.md` 会自动加载为上下文。
 
-在项目目录中打开 Claude Code，`CLAUDE.md` 会自动加载为上下文，Agent 即可理解 `bco` 命令。
+**WorkBuddy：**
 
-### WorkBuddy
-
-将 [skills/boss-career-ops/skill.md](skills/boss-career-ops/skill.md) 复制到 `~/.workbuddy/skills/boss-career-ops/skill.md`，重启 WorkBuddy 即可。
+```bash
+cp skills/boss-career-ops/skill.md ~/.workbuddy/skills/boss-career-ops/skill.md
+```
 
 ## 安全说明
 
@@ -231,4 +260,3 @@ mkdir -p ~/.openclaw/skills/boss-career-ops && cp skills/boss-career-ops/skill.m
 ## License
 
 MIT
-# v0.1.1

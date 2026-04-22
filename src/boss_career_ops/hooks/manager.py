@@ -28,18 +28,6 @@ class HookManager(metaclass=SingletonMeta):
     def __init__(self):
         self._hooks: dict[str, list[HookCallback]] = {}
 
-    def register(self, hook_name: str, callback: HookCallback):
-        if hook_name not in self._hooks:
-            self._hooks[hook_name] = []
-        self._hooks[hook_name].append(callback)
-        logger.info("注册 Hook: %s", hook_name)
-
-    def unregister(self, hook_name: str, callback: HookCallback):
-        if hook_name in self._hooks:
-            self._hooks[hook_name] = [
-                cb for cb in self._hooks[hook_name] if cb is not callback
-            ]
-
     async def execute_before(self, hook_name: str, data: Any = None) -> HookResult:
         combined_result = HookResult(action=HookAction.CONTINUE)
         for callback in self._hooks.get(hook_name, []):
@@ -63,11 +51,3 @@ class HookManager(metaclass=SingletonMeta):
             except Exception as e:
                 logger.error("Hook %s 执行异常: %s", hook_name, e)
 
-    def has_hooks(self, hook_name: str) -> bool:
-        return bool(self._hooks.get(hook_name, []))
-
-    def list_hooks(self) -> dict[str, int]:
-        return {name: len(callbacks) for name, callbacks in self._hooks.items()}
-
-    def clear(self):
-        self._hooks.clear()

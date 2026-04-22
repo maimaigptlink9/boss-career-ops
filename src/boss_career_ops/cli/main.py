@@ -32,7 +32,7 @@ def setup():
 
 @cli.command()
 def login():
-    """登录 BOSS 直聘（4 级降级）"""
+    """登录 BOSS 直聘（3 级降级）"""
     from boss_career_ops.commands.login import run_login
     run_login()
 
@@ -72,13 +72,6 @@ def evaluate(target, from_search):
     """5 维评估（单个/批量）"""
     from boss_career_ops.commands.evaluate import run_evaluate
     run_evaluate(target, from_search)
-
-
-@cli.command()
-def auto_action():
-    """阈值驱动自动执行"""
-    from boss_career_ops.commands.auto_action import run_auto_action
-    run_auto_action()
 
 
 @cli.command()
@@ -153,80 +146,10 @@ def mark(security_id, tag):
 
 
 @cli.command()
-@click.argument("security_id")
-@click.option("--type", "contact_type", required=True, type=click.Choice(["phone", "wechat"]), help="联系方式类型")
-def exchange(security_id, contact_type):
-    """交换联系方式"""
-    from boss_career_ops.commands.exchange import run_exchange
-    run_exchange(security_id, contact_type)
-
-
-@cli.command()
 def pipeline():
     """求职流水线"""
     from boss_career_ops.commands.pipeline import run_pipeline
     run_pipeline()
-
-
-@cli.command()
-def follow_up():
-    """跟进提醒"""
-    from boss_career_ops.commands.follow_up import run_follow_up
-    run_follow_up()
-
-
-@cli.command()
-def digest():
-    """每日摘要"""
-    from boss_career_ops.commands.digest import run_digest
-    run_digest()
-
-
-@cli.group()
-def watch():
-    """增量监控"""
-    pass
-
-
-@watch.command("add")
-@click.argument("name")
-@click.argument("keyword")
-@click.option("--city", default="", help="城市筛选")
-@click.option("--welfare", default="", help="福利筛选")
-def watch_add(name, keyword, city, welfare):
-    """添加监控"""
-    from boss_career_ops.commands.watch import run_watch_add
-    run_watch_add(name, keyword, city, welfare)
-
-
-@watch.command("list")
-def watch_list():
-    """列出监控"""
-    from boss_career_ops.commands.watch import run_watch_list
-    run_watch_list()
-
-
-@watch.command("remove")
-@click.argument("name")
-def watch_remove(name):
-    """移除监控"""
-    from boss_career_ops.commands.watch import run_watch_remove
-    run_watch_remove(name)
-
-
-@watch.command("run")
-@click.argument("name")
-def watch_run(name):
-    """执行监控"""
-    from boss_career_ops.commands.watch import run_watch_run
-    run_watch_run(name)
-
-
-@cli.command()
-def shortlist():
-    """精选列表"""
-    from boss_career_ops.commands.shortlist import run_shortlist
-    run_shortlist()
 
 
 @cli.command()
@@ -249,12 +172,42 @@ def interview(job_id):
     run_interview(job_id)
 
 
-@cli.command()
-@click.argument("job_id")
-def negotiate(job_id):
-    """薪资谈判辅助"""
-    from boss_career_ops.commands.negotiate import run_negotiate
-    run_negotiate(job_id)
+@cli.command("agent-evaluate")
+@click.argument("job_id", required=False)
+@click.option("--stage", default=None, help="按阶段筛选职位")
+@click.option("--limit", default=10, type=int, help="最多输出多少个职位")
+def agent_evaluate(job_id, stage, limit):
+    """输出职位数据供 Agent 评估"""
+    from boss_career_ops.commands.agent_evaluate import run_agent_evaluate
+    run_agent_evaluate(job_id, stage=stage, limit=limit)
+
+
+@cli.command("agent-save")
+@click.argument("subcommand", type=click.Choice(["evaluate", "resume", "chat-summary", "interview-prep"]))
+@click.option("--job-id", default="", help="职位 ID")
+@click.option("--security-id", default="", help="联系人安全 ID（chat-summary 使用）")
+@click.option("--score", default=0.0, type=float, help="评估分数（evaluate 使用）")
+@click.option("--grade", default="", help="评估等级（evaluate 使用）")
+@click.option("--analysis", default="", help="评估分析（evaluate 使用）")
+@click.option("--scores-detail", default=None, help="5 维度评分详情 JSON（evaluate 使用）")
+@click.option("--content", default="", help="简历 Markdown 内容（resume 使用）")
+@click.option("--data", default="", help="JSON 数据（chat-summary/interview-prep 使用）")
+def agent_save(subcommand, job_id, security_id, score, grade, analysis, scores_detail, content, data):
+    """保存 Agent AI 结果到数据库"""
+    from boss_career_ops.commands.agent_save import (
+        run_agent_save_evaluate,
+        run_agent_save_resume,
+        run_agent_save_chat_summary,
+        run_agent_save_interview_prep,
+    )
+    if subcommand == "evaluate":
+        run_agent_save_evaluate(job_id, score, grade, analysis, scores_detail=scores_detail)
+    elif subcommand == "resume":
+        run_agent_save_resume(job_id, content)
+    elif subcommand == "chat-summary":
+        run_agent_save_chat_summary(security_id, data)
+    elif subcommand == "interview-prep":
+        run_agent_save_interview_prep(job_id, data)
 
 
 @cli.command()
@@ -264,40 +217,9 @@ def dashboard():
     run_dashboard()
 
 
-@cli.command("ai-config")
-@click.option("--api-key", default=None, help="API Key")
-@click.option("--base-url", default=None, help="API Base URL（OpenAI 兼容）")
-@click.option("--model", default=None, help="模型名称")
-@click.option("--provider", default=None, help="Provider 类型（openai_compat）")
-@click.option("--max-tokens", default=None, type=int, help="最大 token 数")
-@click.option("--temperature", default=None, type=float, help="温度参数")
-@click.option("--show", "show_config", is_flag=True, help="显示当前配置")
-def ai_config(api_key, base_url, model, provider, max_tokens, temperature, show_config):
-    """AI 配置管理"""
-    from boss_career_ops.commands.ai_config import run_ai_config
-    run_ai_config(api_key, base_url, model, provider, max_tokens, temperature, show_config)
-
-
-@cli.command("ai-evaluate")
-@click.argument("security_id", required=False)
-@click.option("--detail", is_flag=True, help="获取职位详情进行详细评估")
-def ai_evaluate(security_id, detail):
-    """AI 增强评估（使用 AI 进行语义匹配）"""
-    from boss_career_ops.commands.ai_evaluate import run_ai_evaluate
-    run_ai_evaluate(security_id, fetch_detail=detail)
-
-
 @cli.command("skill-update")
 @click.option("--check", "check_only", is_flag=True, help="仅检查远程版本，不输出内容")
 def skill_update(check_only):
     """检查并获取最新 skill.md"""
     from boss_career_ops.commands.skill_update import run_skill_update
     run_skill_update(check_only=check_only)
-
-
-@cli.command("ai-evaluate-batch")
-@click.option("--limit", default=10, type=int, help="最多评估多少个职位")
-def ai_evaluate_batch(limit):
-    """批量 AI 评估（对缓存的搜索结果）"""
-    from boss_career_ops.commands.ai_evaluate_batch import run_ai_evaluate_batch
-    run_ai_evaluate_batch(limit)

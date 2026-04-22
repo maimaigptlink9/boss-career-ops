@@ -30,9 +30,6 @@ debug.log
 Thumbs.db
 
 
-
-# 用户个人数据（防止误提交到 GitHub，实际存储在 ~/.bco/ 下）
-
 # 测试产生的临时文件
 .coverage
 htmlcov/
@@ -68,4 +65,4 @@ check_*.py
 diagnose_*.py
 test_pbkdf2_speed.py
 test_single.py
-test/
+tests/

@@ -1,5 +1,5 @@
-import ctypes
-from typing import Any
+import threading
+import time
 
 import httpx
 
@@ -7,7 +7,6 @@ from boss_career_ops.boss.auth.token_store import TokenStore
 from boss_career_ops.config.singleton import SingletonMeta
 from boss_career_ops.display.error_codes import ErrorCode
 from boss_career_ops.display.logger import get_logger
-from boss_career_ops.display.output import output_json, output_error
 
 logger = get_logger(__name__)
 
@@ -16,13 +15,6 @@ STOKEN_ALIASES = ["stoken", "__zp_stoken__"]
 LOGIN_COOKIE_NAMES = REQUIRED_LOGIN_COOKIES | set(STOKEN_ALIASES)
 BOSS_LOGIN_URL = "https://www.zhipin.com/?ka=header-login"
 CDP_CANDIDATE_PORTS = [9222, 9223, 9224, 9225]
-
-
-def _is_admin() -> bool:
-    try:
-        return bool(ctypes.windll.shell32.IsUserAnAdmin())
-    except Exception:
-        return False
 
 
 def _check_login_cookies(cookies: dict[str, str]) -> bool:
@@ -38,20 +30,6 @@ def _extract_cookies_from_list(cookies_list: list[dict]) -> dict[str, str]:
     return {c["name"]: c["value"] for c in cookies_list}
 
 
-def _parse_set_cookie(header_value: str) -> dict[str, str]:
-    cookies = {}
-    if not header_value:
-        return cookies
-    for part in header_value.split(","):
-        part = part.strip()
-        if "=" in part:
-            name_val = part.split(";")[0].strip()
-            if "=" in name_val:
-                name, val = name_val.split("=", 1)
-                cookies[name.strip()] = val.strip()
-    return cookies
-
-
 class AuthManager(metaclass=SingletonMeta):
     def __init__(self, cdp_url: str | None = None):
         self._token_store = TokenStore()
@@ -59,9 +37,8 @@ class AuthManager(metaclass=SingletonMeta):
 
     def login(self) -> dict:
         for level, method in enumerate([
-            self._login_cookie_extract,
+            self._login_bridge_cookie,
             self._login_cdp,
-            self._login_qr_httpx,
             self._login_patchright,
         ], 1):
             logger.info("尝试登录级别 %d: %s", level, method.__name__)
@@ -74,27 +51,58 @@ class AuthManager(metaclass=SingletonMeta):
                 logger.warning("登录级别 %d 失败: %s", level, e)
         return {"ok": False, "message": "所有登录方式均失败", "code": ErrorCode.LOGIN_FAILED}
 
-    def _login_cookie_extract(self) -> dict:
-        if not _is_admin():
-            logger.info("Cookie 提取需要管理员权限，当前非管理员，跳过")
-            return {"ok": False, "method": "cookie_extract"}
+    def _login_bridge_cookie(self) -> dict:
         try:
-            import rookiepy
-            cookies_list = rookiepy.chrome(domains=[".zhipin.com", "zhipin.com"])
-            cookies = _extract_cookies_from_list(cookies_list)
-            found_names = set(cookies.keys()) & LOGIN_COOKIE_NAMES
-            logger.info("Cookie 提取: 找到 %d 个 zhipin.com Cookie，登录相关: %s",
-                        len(cookies), found_names or "无")
+            from boss_career_ops.bridge.client import BridgeClient
+            from boss_career_ops.bridge.daemon import start_daemon
+        except ImportError:
+            logger.info("Bridge 模块不可用，跳过 Bridge Cookie 登录")
+            return {"ok": False, "method": "bridge_cookie"}
+
+        bridge = BridgeClient()
+
+        if not bridge.is_available():
+            try:
+                t = threading.Thread(daemon=True, target=start_daemon)
+                t.start()
+                for _ in range(10):
+                    time.sleep(1)
+                    if bridge.is_available():
+                        break
+                else:
+                    logger.info("Bridge Daemon 启动超时（10秒）")
+                    return {"ok": False, "method": "bridge_cookie"}
+            except Exception:
+                logger.info("Bridge Daemon 启动失败")
+                return {"ok": False, "method": "bridge_cookie"}
+
+        for _ in range(30):
+            try:
+                resp = httpx.get(f"{bridge._bridge_url}/status", timeout=5.0)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data.get("extensions_connected", 0) > 0:
+                        break
+            except Exception:
+                pass
+            time.sleep(1)
+        else:
+            print("Bridge Daemon 已启动，但 Chrome 扩展未连接。")
+            print("请安装 BOSS Career Ops 浏览器扩展并确保其已启用。")
+            return {"ok": False, "method": "bridge_cookie"}
+
+        try:
+            cookies = bridge.get_cookies()
+            if not cookies:
+                logger.info("Bridge 返回空 Cookie")
+                return {"ok": False, "method": "bridge_cookie"}
             if _check_login_cookies(cookies):
                 self._token_store.save(cookies)
-                return {"ok": True, "method": "cookie_extract", "message": "Cookie 提取成功"}
-            missing = LOGIN_COOKIE_NAMES - found_names
-            logger.info("Cookie 中缺少登录关键字段: %s", missing)
-        except ImportError:
-            logger.info("rookiepy 未安装，跳过 Cookie 提取")
-        except Exception as e:
-            logger.info("Cookie 提取失败: %s", e)
-        return {"ok": False, "method": "cookie_extract"}
+                return {"ok": True, "method": "bridge_cookie", "message": "Bridge Cookie 登录成功"}
+            logger.info("Bridge Cookie 不包含有效登录态")
+        except Exception:
+            logger.info("Bridge Cookie 获取失败")
+        return {"ok": False, "method": "bridge_cookie"}
 
     def _login_cdp(self) -> dict:
         cdp_url = self._cdp_url or self._detect_cdp()
@@ -137,60 +145,6 @@ class AuthManager(metaclass=SingletonMeta):
                 continue
         logger.info("CDP 端口 9222-9225 均无响应。请确保: 1) 先关闭所有 Chrome 窗口 2) 再运行 chrome.exe --remote-debugging-port=9222")
         return None
-
-    def _login_qr_httpx(self) -> dict:
-        try:
-            from boss_career_ops.boss.api.client import BossClient
-            from boss_career_ops.boss.api.endpoints import Endpoints
-            client = BossClient()
-            endpoints = Endpoints()
-            qr_resp = client.get("qr_code")
-            qr_data = qr_resp.get("zpData", {}) or qr_resp.get("data", {})
-            qr_url = qr_data.get("qr_url") or qr_data.get("url")
-            token = qr_data.get("token") or qr_data.get("qr_token")
-            if not qr_url:
-                logger.info("QR httpx: 未获取到二维码链接")
-                return {"ok": False, "method": "qr_httpx"}
-            try:
-                import qrcode
-                qr = qrcode.QRCode(border=1)
-                qr.add_data(qr_url)
-                qr.make(fit=True)
-                qr.print_ascii(invert=True)
-            except ImportError:
-                logger.info("qrcode 库未安装，输出链接: %s", qr_url)
-                print(f"\n请使用 BOSS 直聘 APP 扫描以下链接登录:\n{qr_url}\n")
-            print("\n请使用 BOSS 直聘 APP 扫描上方二维码登录\n")
-            import time as _time
-            progress_interval = 10
-            for i in range(120):
-                _time.sleep(1)
-                scan_resp = client.get("qr_scan_result", params={"token": token})
-                scan_data = scan_resp.get("zpData", {}) or scan_resp.get("data", {})
-                scan_status = scan_data.get("status") or scan_data.get("scan_status")
-                if scan_status == "scanned":
-                    print("已扫码，请在手机确认登录...")
-                elif scan_status == "confirmed":
-                    cookies = scan_data.get("cookies", {})
-                    if isinstance(cookies, dict) and _check_login_cookies(cookies):
-                        self._token_store.save(cookies)
-                        return {"ok": True, "method": "qr_httpx", "message": "QR 登录成功"}
-                    set_cookie_headers = scan_resp.get("headers", {}).get("set-cookie", "")
-                    if set_cookie_headers:
-                        parsed = _parse_set_cookie(set_cookie_headers)
-                        if _check_login_cookies(parsed):
-                            self._token_store.save(parsed)
-                            return {"ok": True, "method": "qr_httpx", "message": "QR 登录成功"}
-                elif scan_status in ("expired", "canceled"):
-                    return {"ok": False, "method": "qr_httpx", "message": f"二维码{scan_status}"}
-                if (i + 1) % progress_interval == 0:
-                    print(f"[QR] 等待扫码中... {i + 1}/120 秒", flush=True)
-            logger.info("QR httpx: 等待超时")
-        except ImportError:
-            logger.info("qrcode 库未安装，跳过 QR httpx 登录")
-        except Exception as e:
-            logger.info("QR httpx 登录失败: %s", e)
-        return {"ok": False, "method": "qr_httpx"}
 
     def _login_patchright(self) -> dict:
         try:

@@ -26,13 +26,3 @@ def next_stage(current: Stage) -> Stage | None:
         return STAGE_ORDER[idx + 1]
     return None
 
-
-def can_transition(current: Stage, target: Stage) -> bool:
-    if current == target:
-        return True
-    try:
-        current_idx = STAGE_ORDER.index(current)
-        target_idx = STAGE_ORDER.index(target)
-        return target_idx == current_idx + 1
-    except ValueError:
-        return False
