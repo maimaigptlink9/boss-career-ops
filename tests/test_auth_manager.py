@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+import psutil
 import pytest
 
 from boss_career_ops.boss.auth.manager import AuthManager, _check_login_cookies
@@ -146,3 +147,55 @@ def test_login_bridge_cookie_first_success(auth):
     assert result["method"] == "bridge_cookie"
     mock_cdp.assert_not_called()
     mock_patchright.assert_not_called()
+
+
+class TestIsChromeRunning:
+    def _make_proc(self, name):
+        proc = MagicMock()
+        proc.info = {"name": name}
+        return proc
+
+    def test_chrome_running(self):
+        procs = [self._make_proc("python.exe"), self._make_proc("chrome.exe"), self._make_proc("explorer.exe")]
+        with patch("boss_career_ops.boss.auth.manager.psutil.process_iter", return_value=procs):
+            assert AuthManager._is_chrome_running() is True
+
+    def test_chrome_not_running(self):
+        procs = [self._make_proc("python.exe"), self._make_proc("explorer.exe")]
+        with patch("boss_career_ops.boss.auth.manager.psutil.process_iter", return_value=procs):
+            assert AuthManager._is_chrome_running() is False
+
+    def test_chrome_name_case_insensitive(self):
+        procs = [self._make_proc("Chrome.exe"), self._make_proc("PYTHON.EXE")]
+        with patch("boss_career_ops.boss.auth.manager.psutil.process_iter", return_value=procs):
+            assert AuthManager._is_chrome_running() is True
+
+    def test_nosuchprocess_skipped(self):
+        def iter_with_error():
+            proc = MagicMock()
+            proc.info = {"name": "chrome.exe"}
+            proc.info.__getitem__ = MagicMock(side_effect=psutil.NoSuchProcess(123))
+            yield proc
+
+        with patch("boss_career_ops.boss.auth.manager.psutil.process_iter", return_value=iter_with_error()):
+            result = AuthManager._is_chrome_running()
+        assert result is False
+
+    def test_access_denied_skipped(self):
+        proc = MagicMock()
+        proc.info = {"name": "chrome.exe"}
+        proc.info.__getitem__ = MagicMock(side_effect=psutil.AccessDenied(123))
+
+        with patch("boss_career_ops.boss.auth.manager.psutil.process_iter", return_value=[proc]):
+            result = AuthManager._is_chrome_running()
+        assert result is False
+
+    def test_general_exception_returns_false(self):
+        with patch("boss_career_ops.boss.auth.manager.psutil.process_iter", side_effect=RuntimeError("boom")):
+            assert AuthManager._is_chrome_running() is False
+
+    def test_linux_chrome_name(self):
+        procs = [self._make_proc("google-chrome-stable")]
+        with patch("boss_career_ops.boss.auth.manager.sys.platform", "linux"), \
+             patch("boss_career_ops.boss.auth.manager.psutil.process_iter", return_value=procs):
+            assert AuthManager._is_chrome_running() is True

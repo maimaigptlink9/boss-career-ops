@@ -1,10 +1,12 @@
 import json
 import os
 import subprocess
+import sys
 import threading
 import time
 
 import httpx
+import psutil
 
 from boss_career_ops.boss.auth.token_store import TokenStore
 from boss_career_ops.config.singleton import SingletonMeta
@@ -223,12 +225,15 @@ class AuthManager(metaclass=SingletonMeta):
 
     @staticmethod
     def _is_chrome_running() -> bool:
+        chrome_names = {"chrome.exe", "chrome"} if sys.platform == "win32" else {"chrome", "google-chrome", "google-chrome-stable"}
         try:
-            result = subprocess.run(
-                ["tasklist", "/FI", "IMAGENAME eq chrome.exe"],
-                capture_output=True, text=True, timeout=5,
-            )
-            return "chrome.exe" in result.stdout
+            for proc in psutil.process_iter(["name"]):
+                try:
+                    if proc.info["name"] and proc.info["name"].lower() in chrome_names:
+                        return True
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+            return False
         except Exception:
             return False
 
