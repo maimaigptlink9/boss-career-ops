@@ -171,19 +171,17 @@ class TestIsChromeRunning:
             assert AuthManager._is_chrome_running() is True
 
     def test_nosuchprocess_skipped(self):
-        def iter_with_error():
-            proc = MagicMock()
-            proc.info = {"name": "chrome.exe"}
-            proc.info.__getitem__ = MagicMock(side_effect=psutil.NoSuchProcess(123))
-            yield proc
+        proc = MagicMock()
+        proc.info = MagicMock()
+        proc.info.__getitem__ = MagicMock(side_effect=psutil.NoSuchProcess(123))
 
-        with patch("boss_career_ops.boss.auth.manager.psutil.process_iter", return_value=iter_with_error()):
+        with patch("boss_career_ops.boss.auth.manager.psutil.process_iter", return_value=[proc]):
             result = AuthManager._is_chrome_running()
         assert result is False
 
     def test_access_denied_skipped(self):
         proc = MagicMock()
-        proc.info = {"name": "chrome.exe"}
+        proc.info = MagicMock()
         proc.info.__getitem__ = MagicMock(side_effect=psutil.AccessDenied(123))
 
         with patch("boss_career_ops.boss.auth.manager.psutil.process_iter", return_value=[proc]):
