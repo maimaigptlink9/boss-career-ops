@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { width: 280px; padding: 12px; font-family: "Microsoft YaHei", sans-serif; font-size: 13px; }
+  h2 { margin: 0 0 8px; font-size: 15px; color: #16213e; }
+  .status { padding: 8px; border-radius: 6px; margin-bottom: 8px; }
+  .status.connected { background: #e8f5e9; color: #2e7d32; }
+  .status.disconnected { background: #ffebee; color: #c62828; }
+  .info { color: #666; font-size: 12px; }
+</style>
+</head>
+<body>
+  <h2>Boss-Career-Ops Bridge</h2>
+  <div id="status" class="status disconnected">未连接</div>
+  <div class="info">Bridge 地址: ws://127.0.0.1:18765</div>
+  <script>
+    const statusEl = document.getElementById("status");
+    const ws = new WebSocket("ws://127.0.0.1:18765/ws");
+    ws.onopen = () => {
+      statusEl.textContent = "已连接";
+      statusEl.className = "status connected";
+      ws.send(JSON.stringify({ type: "ping" }));
+    };
+    ws.onclose = () => {
+      statusEl.textContent = "未连接";
+      statusEl.className = "status disconnected";
+    };
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "ping" || data.data === "pong") {
+        statusEl.textContent = "已连接 ✓";
+      }
+    };
+  </script>
+</body>
+</html>

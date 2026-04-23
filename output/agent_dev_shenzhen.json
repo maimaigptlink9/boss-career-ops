@@ -1,0 +1,778 @@
+{
+  "ok": true,
+  "schema_version": "1.0",
+  "command": "search",
+  "data": [
+    {
+      "job_id": "6b6e6b6e951a57940nd63Nu-F1BR",
+      "security_id": "4mJYP3pIlgYMU-o1HRmSvwX_-xAyaVTWpCUTvjvPN_LvIspX_5_7XCO_tKaEkfJV_O3RH08uuFH6GMKGal1k9S4BDSnRaGWhrHk65Xt2gLqNBlAS6eyr0QpIkN-jcUCYuZrjgnZcaslxjpGmivTUuTbZDNpR6u0LCo1OIlrSyA7Ywgtlb8GM8sl8fd0lb8NpiLH6WtWOOvojAA4PKy12Y1mxpzkz0-YAyzwYBlKRD9pb-tyqk3k_AO9W2cOmZXQ9uyHvJzkxhzKF26rzLF--N7fp7LUEmrpr2-hQqcfZCbC5m9Ct-ToRNQVCeVT_AUU1iVqSTnBbXMDnWBoFERJCe9VIXZgW7-YCe7ipY84k0kIsk5SCk6jFG2SOA-cU7g~~",
+      "job_name": "Ai Agent开发（接受25届＋线上面＋入职带教",
+      "company_name": "勇冠睿智",
+      "salary_desc": "14-28K·14薪",
+      "salary_min": 14000,
+      "salary_max": 28000,
+      "salary_months": 14,
+      "city_name": "深圳",
+      "experience": "经验不限",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "经验不限",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "未融资",
+      "brand_scale": "20-99人",
+      "brand_industry": "互联网"
+    },
+    {
+      "job_id": "b2d50fb6f76d2bf00nZ93Nu7E1pV",
+      "security_id": "Ps2Hl5eHIyYBX-a1adJ3VQ2TLwmBJ1Acp_croF8yX0JwpHy0ui5nq4OzAuD3M30zU27-7mxEz2uTAodwzc6RTybD7cJD9YqUGy5UuYvSrfDqDQGF7Tye7io5bL3A7YTC5NuHSR1OE2xDif6weSm5fIQ2BFteqhPt2WRk24DLTY_sL1CQaZKZXfzDZrLezJFxPzST7tA6Zw0HPShNu3CveHC5gJf9h9m83keTdDU0on9PS9oq7fnCRlluJ48LqLrWiAbecwbZie5H0Z-Ruam6UraEdbZ3m7lZsXiXNW_jhwUkWgyknO6EL8N1gHGlkWnn_xAcAntPyEIqjsY18W93_3mevGtHuXKQwNDMUMT4h_OQ98VoWmh-AvMMwkIB",
+      "job_name": "AI Agent开发",
+      "company_name": "雷特科技",
+      "salary_desc": "40-60K·13薪",
+      "salary_min": 40000,
+      "salary_max": 60000,
+      "salary_months": 13,
+      "city_name": "深圳",
+      "experience": "5-10年",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "5-10年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "不需要融资",
+      "brand_scale": "1000-9999人",
+      "brand_industry": "电子商务"
+    },
+    {
+      "job_id": "216d852dd89cd67c0nd43tS9FldV",
+      "security_id": "SpauAVmXFMEcz-o1mZcxySthmpAFr3671hlFen8b05dwwd61Unn94ya02M5mT2I3Fd1myiJ5pQ6XsS54yqVJjNp6WlU63WFjHQjK1JihJASTy8dg-5AAMdBKsDvxF0SLN_3s8QD4IZJ087dtqAQ2P1Ecl-NsH0k_rbPujZVXi8KIzeqVTGUuTADauZgnWXpnPAtELGeP4FeK19enTU3JKFc2P9EJ1NeuvNqgC1VTQhHKFDaf1shSV4zqSS4p51FaLeBKhV7ZRiYTlIra6aBPJSm26sp_UAbMj2Sf0TPSMmENWzetq0dwgdCABNb_htfiE0nude4ao2S9QBGyvBSEb-asW1I-RdIFPiZ7yiSs8WRiNJKvipK5c2Ugd8DXWA~~",
+      "job_name": "AI Agent开发（视频生成方向）",
+      "company_name": "某小型互联网公司",
+      "salary_desc": "40-55K·16薪",
+      "salary_min": 40000,
+      "salary_max": 55000,
+      "salary_months": 16,
+      "city_name": "深圳",
+      "experience": "3-5年",
+      "education": "本科",
+      "skills": [
+        "agent",
+        "智能体",
+        "llm应用开发"
+      ],
+      "job_labels": [
+        "3-5年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "A轮",
+      "brand_scale": "20-99人",
+      "brand_industry": "互联网"
+    },
+    {
+      "job_id": "5e6a2af79c192d550nd52tW-FFpR",
+      "security_id": "rY-7VwI57erFw-f1NGTbm0Rg4Gc8iYyfjMfmds7xZ9-Q0_mdxsewn0_CTkeOyLKaXI5Qe6qLkZUBOjsoA8PApSdMeEnW4ZxUOxhwOnP4XU_djUZ4aXm2-gy2V_WprfiFuzvo8vx7StWNp2pvGLTws0MDX1KLIyezyyfI1DqUC5forD9pTNd8ULinAhouukDQxJDlWBWZNt5H3OFwYsKo2jWw1fifq1y7_QcizCd3h--FGFCSbjmQHazHJqxY98hOEapTmmJl_MshBAFBDZMsAIaXC3XxQn39JqWUV6u8PEWU04STT4twbPcgnAkj77gitSfylrLOH_XZuZzhDsKVFGQ2SwJ1kbBzLudHNI5Oh-vxGuzlDAW6Cc--aOVkMA~~",
+      "job_name": "ai agent工程师",
+      "company_name": "弃疾数智",
+      "salary_desc": "15-25K",
+      "salary_min": 15000,
+      "salary_max": 25000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "1-3年",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "1-3年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "不需要融资",
+      "brand_scale": "0-20人",
+      "brand_industry": "互联网"
+    },
+    {
+      "job_id": "8b7e96c204f8c29c0nZ83N65E1dV",
+      "security_id": "4DjsUuwZ2o10v-v1pfEeR5lURKRLhSmOtOxuVuQXpgsvnjkoUXJYU0KjypfRDKwY02PG-dm_gydYmtLBq8AKpsZJNdquSoWFuIRSGoBkx6LkEGu5PJaNJrpEAgCVHZonywYxYIfA3qpPVkbv0SpKRLCGfcmd_BDNPbeFZ3GmYVhInrB-ftIE18MIy7btOdfv3yzQQ_PwJtwJEIBhJgP6Rs-J9mWzSa8zmypW5-Dl0gyd9y5une4gwq_F4qVRAyHeTFaWfwkrUEM8Rih6_oD1Sb0DyUjCKSHaprFtZDxnXZX-ZDdbjIFHqhH9hucAmLUROuJElhyyB5FCoXfsX855xNq0XOdHKYNAr0wLUABIz5s9R4-Zg9zptowitAQ~",
+      "job_name": "AI Agent开发【5险1金＋不拖薪】",
+      "company_name": "青岛幸福感",
+      "salary_desc": "40-60K",
+      "salary_min": 40000,
+      "salary_max": 60000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "5-10年",
+      "education": "本科",
+      "skills": [
+        "生病关爱基金",
+        "Java",
+        "公费旅游基金",
+        "爬虫经验",
+        "入职投保",
+        "PyTorch",
+        "MySQL",
+        "0息住房基金",
+        "架构设计经验",
+        "Python"
+      ],
+      "job_labels": [
+        "5-10年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "不需要融资",
+      "brand_scale": "1000-9999人",
+      "brand_industry": "电子商务"
+    },
+    {
+      "job_id": "6a69d036686b80370nZ92du9FVNV",
+      "security_id": "c4_K-79Nm29kT-01wnQROL1jLSsiPKucB6e2v47fMTIjJqCwtqmdBqJrBc4nSJIdxgRGK8jDvqT_LtdM_RNtjm9G9GpFx73v6CNManHSNDEn3KEIoyNvmGcY0DZvebkhR-fcZ-rUxL8aYUtCJRemVyQ5OtvrWi47UMHC5WRzHWZwuqGqpOF59WbWsf4Yncc1Op3iDjbhP0DNaK2Rj8LBToX-q8QK0GKKl1p85VLZ96QHugRkJvzWdNPZ0hQT7Tsw41WaBS1ZEyZpPeBzwdzJzaOhGHX3uF7mPlMkwmuoxqnWd-jzOYHVOzx0ot31eCuj35Jt5a1ef-x_YL3cnqC4oAhV4NofxsaCorD4aSW4LpJeSQMDJL-QYCLIp5KKdg~~",
+      "job_name": "数智化开发工程师（AI应用开发/agent开发）",
+      "company_name": "大族数控",
+      "salary_desc": "20-40K",
+      "salary_min": 20000,
+      "salary_max": 40000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "3-5年",
+      "education": "本科",
+      "skills": [
+        "agent",
+        "JAVA",
+        "python",
+        "skills",
+        "AI"
+      ],
+      "job_labels": [
+        "3-5年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "已上市",
+      "brand_scale": "1000-9999人",
+      "brand_industry": "专用设备"
+    },
+    {
+      "job_id": "4d7523546f8498790nZy39m9EVJQ",
+      "security_id": "5XPKZgzFmCddl-k1Tl8yacMxWjYA7czN6rndsPp7F-rAzmFxqXJsZRXU1M3qkiMKYW7GlJ4pVZEQXQzsezIXq5eOlRqmYWraucs8HKrQQ0jie7sxelhjU7t6ZOtU39SQeV0FqLVVtbILK0kF4EO9kHnxvGQMqTfbWrm-rmPm-OwfhxY5_bAeGUDJXe6BV5ERa-Ags_cbb97eUKk4_Hmj0VtrgEOVJD-e21TWQbu-f7xlJDDydB0u5-M7iMCrTZKTTT_-7gihbutJxCcZASC5axk0xZ5NQvSk2uWL5ReRQUk6NTfXxh-hv-8BO8k3k3SWzIHMPeaxeck16x5Zp-5TcvUOQrqzS2R0etuqUh6ewaVu1hygfvAEZmX-Xgyb",
+      "job_name": "AI Agent 开发实习生（可转正）",
+      "company_name": "新产业创投",
+      "salary_desc": "300-600元/天",
+      "salary_min": 300,
+      "salary_max": 600,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "4天/周",
+        "3个月",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "不需要融资",
+      "brand_scale": "20-99人",
+      "brand_industry": "投资/融资"
+    },
+    {
+      "job_id": "b9cd94be0e1ee2c80nd43924GVFQ",
+      "security_id": "1hXP34XySEy92-o1y3hyhf5LLi9y550eNJYu5ivYn1A85yKlXkFf8ijv37v3smRhxHsWFjneCQIjg77JZoYv1Ji5yYYfI1AnBmf5Yl8AYju3UGBp8c1wTf7PVvX0Y00pSYP0wlYea7EHXNsTc4wG2DdghUuWBvnUkvblba--cqygnBllVZl9rrjcuP2ixjJ1240PsweXOg7dyk6QGWnr6MEyCjWvfWrNAtwWboqEGyhVm-I-2VvlFoytDCtOsN0OkG4PLjXctteAll3ThmhcAphaMliO3CVYxglxmlNQt0IACFnYXEkRAh_PHVblH91uvpwq_ktaBjgiNmVIH4aZa9lZX3q10TfshPm27OQ9vWK8yDF0H9uJds73RfDxLQ~~",
+      "job_name": "agent开发",
+      "company_name": "深圳某中型计算机软件公司",
+      "salary_desc": "65-95K",
+      "salary_min": 65000,
+      "salary_max": 95000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "经验不限",
+      "education": "学历不限",
+      "skills": [],
+      "job_labels": [
+        "经验不限",
+        "学历不限"
+      ],
+      "description": "",
+      "brand_stage": "",
+      "brand_scale": "100-499人",
+      "brand_industry": "计算机软件"
+    },
+    {
+      "job_id": "39f5a96dcf9505290nZ93NW8EFNT",
+      "security_id": "jEr32Pycbnh5b-H15zKzYQKURWoax7LrTy2qmc_yf6X46KSQgUPMs38N9jvOos-884whGsbLsMNsQZffl_-xELDgBPpk9boZQt1pudzGxA9XwAkoPDCTMfZZgVABOXNgwnh895RUrKnIAWMh-TK9aMIY4aucW90qd4d4xzpJRAE_SNbKCZIiTOzy_tnMM0y1sv2i3mYz2w-6e7BMZzQExRwQb5ImH5epNg9mjGQYPehion0Ho0O_xgE0Jwiy0BzLYsEEFFDrDot1J3VsuKgHTo125NORW1FUPjGrD3jOYrhDxHNzWmEnPqk87tXwyvvawujR2weeQyA4DuO8s43mtsBG09g9QE-7D2pRv5AU-96kcnN69NoDGAAzlVUz",
+      "job_name": "AI Agent开发",
+      "company_name": "某知名上市集团公司",
+      "salary_desc": "80-110K",
+      "salary_min": 80000,
+      "salary_max": 110000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "5-10年",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "5-10年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "",
+      "brand_scale": "1000-9999人",
+      "brand_industry": "计算机硬件"
+    },
+    {
+      "job_id": "0d7e9f51d1998273031z3tq7E1pT",
+      "security_id": "hShsxMg7UFIGW-T14Ip4PRbudpQ3OVkBl6_JcERmPxY1YaYOBeGOGLi4WV7e_byrVWvwEMDeThhuT6wmC5ZMqulEi6wr8A4iTjdPN1aMfsdoAqD1fynvfWRIqMcyoZcoH5oZTYOn52IKtgf8ZH7E1bkZLLwlb7JWmjVLiMkKutLFJ_phyEEpLtcWWVvlu2WQPmPc2c267Jn-ia0H8oCmp80bPnKpiwsQCk-iEtRKlKVvUJzexQY1o3zKa8ztj4HyfINGVfp_Erv3B2KN3HJgxIOjfapCAbqbk469T9rjwqUvyfcRO1JjgkqZLbrQTYoxCLGujL7E9SihgMLbsNrZfJnVHIVhc78osvFcsmMg0Cf-lxlqQETMKZU-W40~",
+      "job_name": "AI Agent开发工程师",
+      "company_name": "四方精创",
+      "salary_desc": "18-28K",
+      "salary_min": 18000,
+      "salary_max": 28000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "3-5年",
+      "education": "本科",
+      "skills": [
+        "AI",
+        "Python"
+      ],
+      "job_labels": [
+        "3-5年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "已上市",
+      "brand_scale": "1000-9999人",
+      "brand_industry": "计算机软件"
+    },
+    {
+      "job_id": "1ee024b1b89fc9e90nZ73tm1GFRX",
+      "security_id": "aG2QD40fQ2Wqm-E1eZy0FktZwgXcC8AhXDJK3LcJXV9H1bHym8Dmk7bRc8QA8oNyCXkVc8hw160mSk7F9HCALnZqxutZ_8x-kM_MT8ftDFR3rf_-M70FV1iU2mIk3pEYBMn_12O1C1TBThcdx6YRgxbec_SqtN-YkJUMLIxAFmJjQ2wIgS8MLljJoLhH17DOvbgn2IfZLLN75DHvWeY3GZXokDLUuhqgAYKM4Rl9hb02cAxPPSCZaxQHejGYtL9yy6cbX-oUp_Jn1oc0767_cv6Vaa2gOLTTGzYcyZQu2rKMog89zJzkVZPNHdJQtyfWFEcMC1ZjPABSpGpCwm0qnw4csrfFgaE1kjlkGRz6bjjBQMwQbEHPidevcA~~",
+      "job_name": "agent开发/AI应用工程师（国际物流方向）",
+      "company_name": "九方通逊",
+      "salary_desc": "11-18K",
+      "salary_min": 11000,
+      "salary_max": 18000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "1-3年",
+      "education": "本科",
+      "skills": [
+        "agent",
+        "PyTorch",
+        "NLP",
+        "Docker",
+        "Python",
+        "TensorFlow"
+      ],
+      "job_labels": [
+        "1-3年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "未融资",
+      "brand_scale": "500-999人",
+      "brand_industry": "电子商务"
+    },
+    {
+      "job_id": "cea1538d22c048000nd-2tW1E1JV",
+      "security_id": "JSEJrWvjHx6Eq-41hTz9HgPSTQJE1IDTni4SJheorgZSdmkD5fUmKvWbfxEXHCjYNi3gnP8WPnyads6XFuXdpJLqPC1VARYToNH-qsiK0VPaejmY8WVPoOh4PtWLLShW-rI89KLuiGm5UgfcUf_IpFvmdWSqs2GofEOJqcXZZuoJtgEHEtqW6bdYsarLqF3Ewg8XkPONFvMs5I4_DdA-3AZPf39op-e1x5ehI7d03BkW_jdCUTpjMEKeWKdTOlNxxckNdC9x2j-Gf_4BWxBlldqv4RDZaSTS06pDYNQS3Eo-FEAbUjsF0g7kz-Y-x1Wk__GW0eLB7lmAf6hgKeGLSaY9tvO0GRy9_63TxH1YuLqejSyhJPPoM_LUyglTnQ~~",
+      "job_name": "Agent开发工程师",
+      "company_name": "某互联网公司",
+      "salary_desc": "30-45K·15薪",
+      "salary_min": 30000,
+      "salary_max": 45000,
+      "salary_months": 15,
+      "city_name": "深圳",
+      "experience": "经验不限",
+      "education": "学历不限",
+      "skills": [
+        "Python",
+        "agent",
+        "LangChain",
+        "ai",
+        "多模态",
+        "大语言模型"
+      ],
+      "job_labels": [
+        "经验不限",
+        "学历不限"
+      ],
+      "description": "",
+      "brand_stage": "",
+      "brand_scale": "20-99人",
+      "brand_industry": "互联网"
+    },
+    {
+      "job_id": "03e0095b01ebe4b40nd43dm7E1JR",
+      "security_id": "pXGVolYXvC3S5-u1rIRr6C6s4z80aUCY-rcdVpMXFF6iJkIuiXDx93qapJQDhyF-SR9E8KzuOzcDpAne68TJ3M8GXDtql3rbPDzkT59Et5EHN7PZjJYWBvu2Lb375KSqMB0vCfvxLXhuhlS7SolPTpOQAfx0xLwf4M50IvWG_QYQ_6Af-rinexUm4jMHw7gq9w7vnwAtsgUe-94emxJtfXtSS8V82dZBnV7_7lhKpwbI1YVfz3fpYNPrhESJKXX2I91nRDm_0bc1G7MbGqQSRsbbc78VsNkSEVihVO77CGiegq-AOdmhJZ52MurKZdgbDI-1LazeDue6kjkpAafvonyUycN3hjZYTf3n",
+      "job_name": "AI Agent 开发",
+      "company_name": "深圳蔚库科技有限公司",
+      "salary_desc": "20-40K",
+      "salary_min": 20000,
+      "salary_max": 40000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "经验不限",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "经验不限",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "",
+      "brand_scale": "20-99人",
+      "brand_industry": "计算机软件"
+    },
+    {
+      "job_id": "6c53df5cbb43c4fa0nZ73ty9GFpU",
+      "security_id": "gVbKlsFZ8eBhN-Y1u9HLF-cRsLO7DU3C3BZe4Ej2WBEbjw_EUTB0mw6duwprw7iJMVyDxnAAdPe3BsLkSMd76Bcc-Ay0aRjGkLpkar8mEd0ZybMlC4ceb23lB_lrLJsunCAVzX6iP_-S2PeiyLWbyxyr8EMxgmGupdROLwqs_mBFERNp2E8SIbhrHDVIYRNoMTb7xplwajUs_IiLRcEKQEgHpgxhvF4tRPMzHwzCQSFXMIk54uM63BLtok8AV4rF6WTFyzQtlM_vu_GlQ6k0LBpCQ1OHg1YSx4yvrtkuY4xcplSofJSvAJeXNWX4qcoR4fdWwMW3JZuNLJmOoqMgbxhXIcwNz0cJM0cwr1RBojxbts6ZQFUCoT6E1ZyHzA~~",
+      "job_name": "AI Agent开发工程师 (n8n/Coze方向)",
+      "company_name": "深圳市启庞三维科技",
+      "salary_desc": "15-20K",
+      "salary_min": 15000,
+      "salary_max": 20000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "1-3年",
+      "education": "大专",
+      "skills": [
+        "MySQL",
+        "机器学习经验",
+        "AI 智能体开发工程师",
+        "Python"
+      ],
+      "job_labels": [
+        "1-3年",
+        "大专"
+      ],
+      "description": "",
+      "brand_stage": "不需要融资",
+      "brand_scale": "100-499人",
+      "brand_industry": "电子商务"
+    },
+    {
+      "job_id": "96c55a32329d9b580nd43N60GFtW",
+      "security_id": "lsGEAGruLFalt-e1SVTg3vR52CH4ABB3qgxtaTz2FAwzXAZ-w-XSKV-VCrRlloUkWaKZawszpvOh41amFP8INGayHFCdgjD7rabU5WwmR6ZwaifrOmqKb20wbp_7Bmfq0taTFfuKFVuyBBG1zpyim3p5MW2joL88uPk6dpvz77W0K2dmilTZ50RoV0jDZzpOX8UV8aIjDl4GvMom3wrJ9DPYwFRrpBqMxS5r6ndlvKQWviOU3D7VePC3FMxeS-oGZuz5YBi-yC5kO8RXhRBBdc0hkjligr9x7y3iHk8G09NupdW4UewQB1txi8s0-sHeR3MyQSDWfSNFxVcyD5Is6MFuIjRJcmD3_dLu0XmzQL597BEhXh6mG6gwhtpk6A~~",
+      "job_name": "AI agent开发实习生",
+      "company_name": "安点科技",
+      "salary_desc": "200-250元/天",
+      "salary_min": 200,
+      "salary_max": 250,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "",
+      "education": "本科",
+      "skills": [
+        "Python",
+        "Pandas",
+        "MySQL",
+        "爬虫经验"
+      ],
+      "job_labels": [
+        "6天/周",
+        "6个月",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "未融资",
+      "brand_scale": "20-99人",
+      "brand_industry": "人工智能"
+    },
+    {
+      "job_id": "6b6e6b6e951a57940nd63Nu-F1BR",
+      "security_id": "yyR0fkVEBAgLK-C1_6gUIuFEFbJQrKk-Bnxu6X9t0HiTgiBYOO521H6bR6j67GIJnu--yaaCbcmm5-NFI_MwOMKbI0sRUitevLGDHPb9vdA6cyZYZmOZCD4fG4lY7MkdhOiRK4NFW9bji4ZqA6E9UNmAFs3uhTycor_RCFL6RS7_skjUf9nw-7k8v9304fPKF-sxwW1qQEfFS0On6AmiJYKgELsyYnU6pPHHMrWg962eNFRjFFFmQQ1hqw_mTr7zj7qptUFtx07P3wvW_KdZEr36YQtSS7gnssbICQc3e-DOB50TEnOeg-r5HHul-jawccieQE9vutHbwTeAqVAhWZWwS4v3epPop1W1pbn1swNssnviBj1_Ipot1jfrvQ~~",
+      "job_name": "Ai Agent开发（接受25届＋线上面＋入职带教",
+      "company_name": "勇冠睿智",
+      "salary_desc": "14-28K·14薪",
+      "salary_min": 14000,
+      "salary_max": 28000,
+      "salary_months": 14,
+      "city_name": "深圳",
+      "experience": "经验不限",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "经验不限",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "未融资",
+      "brand_scale": "20-99人",
+      "brand_industry": "互联网"
+    },
+    {
+      "job_id": "8b7e96c204f8c29c0nZ83N65E1dV",
+      "security_id": "UjtARS7adMwhM-K1bghs5ILu98koCbAO0qx4WlgeNo8OXTCyk3OKJV5h4cdmDu_ddG1-GNpP0NhqnHDDx0ryhxuKrY7jNZHeGqp_1H_PTe-fzjkSolkLP2CQEqWiZ7ne2mHJsNOPGwnqqSJ4rtFz5k-W4OtpTkPokU8VZpi3Ewop3lWsQOB3YTf-8_3LuQg-0N7xnqsHwq-p-F1Aymz0T9xbBpFHLq8bDPWsQCIBifojxUDLsrbNZxnXGku_KeaOnYAFfBRBjgJMN6wzu0SwagJsrZp-Srpwlm7wMbn3iS5OTzg0D6fjdWM_FOckdEi46EK6BSkp2sGO2HG-Uy2DaNFQDqoGY-zQCZINCZqDp54edwlEPcrdhZ1GvgU~",
+      "job_name": "AI Agent开发【5险1金＋不拖薪】",
+      "company_name": "青岛幸福感",
+      "salary_desc": "40-60K",
+      "salary_min": 40000,
+      "salary_max": 60000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "5-10年",
+      "education": "本科",
+      "skills": [
+        "生病关爱基金",
+        "Java",
+        "公费旅游基金",
+        "爬虫经验",
+        "入职投保",
+        "PyTorch",
+        "MySQL",
+        "0息住房基金",
+        "架构设计经验",
+        "Python"
+      ],
+      "job_labels": [
+        "5-10年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "不需要融资",
+      "brand_scale": "1000-9999人",
+      "brand_industry": "电子商务"
+    },
+    {
+      "job_id": "1ee024b1b89fc9e90nZ73tm1GFRX",
+      "security_id": "HQbgQ5bvHkJI5-J1XkDm6S6cUaLHSlcQ9QNIe7qz8MKBU9aPYZXXR0fDNvE7Vszpu6cH4DP1W3sVeuPQQ-H61NPWcKe-rqNEFI8buCe2R_TVeT3XhJO4xphA1Z_wDUdBuLob4QdTiW4OBb0CKPC-syOJYprd40MCjQXD_ZYcq9cB7XufwCRM-82sOparWy8_gtYc8PKSkUVQIelZI_rjfy1mM_WZV8-Q2vq3nq8wUWN3whW_Pqz3M4Vo8ckOHWS1V-ceCSB7FPp_nHuRTNDP8fqg8OM4fUi_fvH4e-5oAq66HYySXNb_wTFjHrvSLalcu5QbrMElzNRiXuLg6M7EPFhq3H66RpcF2B0VbBTJxT3qbzUk9hh8C5_Dzw~~",
+      "job_name": "agent开发/AI应用工程师（国际物流方向）",
+      "company_name": "九方通逊",
+      "salary_desc": "11-18K",
+      "salary_min": 11000,
+      "salary_max": 18000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "1-3年",
+      "education": "本科",
+      "skills": [
+        "agent",
+        "PyTorch",
+        "NLP",
+        "Docker",
+        "Python",
+        "TensorFlow"
+      ],
+      "job_labels": [
+        "1-3年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "未融资",
+      "brand_scale": "500-999人",
+      "brand_industry": "电子商务"
+    },
+    {
+      "job_id": "b2d50fb6f76d2bf00nZ93Nu7E1pV",
+      "security_id": "OhGi8ifypey0T-M1TChM4nH6a645Tvn7F_OiOP8a9BDX5pZiG3mDBRaeYr3WAIxZggwRtRBGmchzAxC_CWmX6DZyNdSGiwOrBr3mKPt9KT0BcmdQc-CBp7K90RLKTXlYa5sLMs6xnEEijDS0cHFSyqqkNjpY9-qp6uu9HDn17LbBEItyaJy5YHZJpqWolmbvk7aXtv0jW4WC0ixSYvNgxXbr4Yl2p8nIbg4XdCAzZZ_ddAyDO5JrQ7Xtb8Q57TbXLEjXsxJbw4i2ef_gZuaqaoWbfmEoD30mV1yFofyCHgALfkueS8IQdUoTctmVQdV6aDKPDfbU1xZuUaKyNsa3nLFMmEDf9YKrkx_95p5C4DQGu4aic2H2M3N4r4G3",
+      "job_name": "AI Agent开发",
+      "company_name": "雷特科技",
+      "salary_desc": "40-60K·13薪",
+      "salary_min": 40000,
+      "salary_max": 60000,
+      "salary_months": 13,
+      "city_name": "深圳",
+      "experience": "5-10年",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "5-10年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "不需要融资",
+      "brand_scale": "1000-9999人",
+      "brand_industry": "电子商务"
+    },
+    {
+      "job_id": "5e6a2af79c192d550nd52tW-FFpR",
+      "security_id": "4ctQmXUZh9T1m-u1vINHYKKqR2urOQfmID7yL69kj9Old6PYF3sZ6AJznOiJU9xaYqPjkHrzpBGd29L8VKIgcBUKRJoZUyx89l3YSMQHAD5o7UkTWt7C_4tGBUeG8ep-CYwyq19DPYnTzFZ0jBG4WOnLN-Mdu-MgUR5W4RsPFpsINzr_i1UrKkYt2_WVC5o_jbTH1ubVIlk-71KhyFyN0q_vBaesjgYGHObvwgkfb-gIAbJFOHgsws-tKfBUOfb-219KOLDKDz7iTZceYNxG4pFjRfO0KGpR6dDXGZhfsQIloygb0Y60AXIS60wiCNWjNPiVV00g8xI2XFOC_iolUec0ttZwFVh44OCFZj_OgykhVAFGIo26G6nVTTXrTA~~",
+      "job_name": "ai agent工程师",
+      "company_name": "弃疾数智",
+      "salary_desc": "15-25K",
+      "salary_min": 15000,
+      "salary_max": 25000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "1-3年",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "1-3年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "不需要融资",
+      "brand_scale": "0-20人",
+      "brand_industry": "互联网"
+    },
+    {
+      "job_id": "216d852dd89cd67c0nd43tS9FldV",
+      "security_id": "pYrzuuqyMOFt7-b11ZRIXOFB2mZJHxUCUnPHJb9h3Th_5cVzokjTCKNcQesaT4R701jPK25dZBF-0Fbf601VXLgMyRqxS7tEX7JodmVlbccXhSJy-dr0Lk_4RtrB0kxiCHmkSKb2vuHBQB4u-uHcQuwHKmXzJxxDpaQL8Iq4rcAYT_-Qddfog_oi1A8U-ewCmqSrxXbwLpynJNiRDebjqi60zhVMdZooKONFhx9BHYTa0oqIYI10WwgdxXhvvJh8Ntk798o0WsoWLkmmh3Q9e6Wluo9vup4a5V4ahwML4jeYKcbROIwtzg-evdz143TW_Mm-VvqsZX19Im5gYZFFFbowNNGVyiO8tSdhrDePZwLeNqe5Tk99MNIAByDkoA~~",
+      "job_name": "AI Agent开发（视频生成方向）",
+      "company_name": "某小型互联网公司",
+      "salary_desc": "40-55K·16薪",
+      "salary_min": 40000,
+      "salary_max": 55000,
+      "salary_months": 16,
+      "city_name": "深圳",
+      "experience": "3-5年",
+      "education": "本科",
+      "skills": [
+        "agent",
+        "智能体",
+        "llm应用开发"
+      ],
+      "job_labels": [
+        "3-5年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "A轮",
+      "brand_scale": "20-99人",
+      "brand_industry": "互联网"
+    },
+    {
+      "job_id": "43fc363427ecd3e60nZ_3NW1GFBR",
+      "security_id": "BDmcgJip7t_MH-I12NYofxwMcyC2TYeaT2_tclGzfk6wl1_14uilUJnp8RTJCFlcqD0witpY1T5jvLrEINXvfU9UawdN-WPa19LUXusfIkZdbFLST068mhAPokoGPpfsRGfaLzrXgn9CoyOsmANuSkdu4nZHLkR1b90p7k-zI99OvoZdjYa9pR5eH0qZH5WphxOm7gIBUtMvkqN4-JqkclGY-w4afiUHPPV0-N-d-PueGePh68xJUsuHOPrJ2mECXwMG1N7N8fakVT35f9Hpsnc1L9ICNOysqCT0RmhyPF4nYXv1_AD3yuNhwHzz1cvfHItfZRV2hULf_smAKZQuh0KBurjCR_iL6qqVMmT97mrWVqvhJbvDHPifWA~~",
+      "job_name": "AI Agent 开发工程师",
+      "company_name": "亘强科技",
+      "salary_desc": "1-6K",
+      "salary_min": 1000,
+      "salary_max": 6000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "1年以内",
+      "education": "本科",
+      "skills": [
+        "算法工程化经验",
+        "参加算法相关竞赛/获奖",
+        "优秀开源项目经历",
+        "自然语言处理算法",
+        "语音算法",
+        "通信算法",
+        "多模态算法",
+        "SLAM算法",
+        "嵌入式开发",
+        "大数据处理框架(Spark/Hadoop/Hive)",
+        "C/C++",
+        "Python",
+        "并行计算"
+      ],
+      "job_labels": [
+        "1年以内",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "未融资",
+      "brand_scale": "20-99人",
+      "brand_industry": "通信/网络设备"
+    },
+    {
+      "job_id": "ad478a99ed81141703F_2Ni7GVtV",
+      "security_id": "Jn0fQuQ9Bf-HV-L1DUWwCLMSeO_Vt-uRc0QF5KtQiW72QavBzyhZsHOvuaMxtJlTlnpKIwh__GNxYVOpOkKWt9R8pQ1MnAxIwpj2L5zKJBQ7rMUaL6Z6RDoQUKqdi3stW1rCtnwieV13vmyBEzs2sJR5iu4U2RXkwBP-ZwGylwTa33saheAIaxSiPBXZESGDSdm89vQ491AvIWGrORtNi-t45A2mlIvC544agcy8lq4JNgTx4eoI7S-go6sf731BLp6v-KHo0zW7klmQoiMDSMTngf3UpJaIvx6t9-OJDpxhjSWiP8RxNSEoNyPmzjfPgPsxSyS3LrsUdB9h6AfiINQbMPPr2l9qIzo~",
+      "job_name": "AI Agent 应用开发工程师",
+      "company_name": "自下而上",
+      "salary_desc": "40-70K",
+      "salary_min": 40000,
+      "salary_max": 70000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "3-5年",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "3-5年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "天使轮",
+      "brand_scale": "0-20人",
+      "brand_industry": "人工智能"
+    },
+    {
+      "job_id": "6a69d036686b80370nZ92du9FVNV",
+      "security_id": "89WXsoR41S2mK-B1ppLunsO_UpmXn242ONwEHUHyc3zthh5DE-HkaS_mdcUhWGRdFsKBxSfwh4njM6XxvTh9N2qrjgeDe1VL-um31o6n_Vzm24o9hQNlUMrHo5faOddsXcYD7l-33hDXFSkS2SwoSuCmoLkIIsIi4t4jTlT63ffjthkxecFIdv4HZTj7skSyN3fUnOY2aVr0dSB3hvAUvTG7HvkU_o5cj2OO6ZVWkR48ruundbxCU6s_OOD4ANEgINMDhdGnqIZMAG-wBUzwTNXBEtVsOqkRdXyFD1bRWbd0ihLApXT2wS13Ilx4xMNastXnjO7wHp_U39IQGGOhw_i-9EvMWG-EfoIUTLcM74dCKiR0Pct-4UltLYy1wA~~",
+      "job_name": "数智化开发工程师（AI应用开发/agent开发）",
+      "company_name": "大族数控",
+      "salary_desc": "20-40K",
+      "salary_min": 20000,
+      "salary_max": 40000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "3-5年",
+      "education": "本科",
+      "skills": [
+        "agent",
+        "JAVA",
+        "python",
+        "skills",
+        "AI"
+      ],
+      "job_labels": [
+        "3-5年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "已上市",
+      "brand_scale": "1000-9999人",
+      "brand_industry": "专用设备"
+    },
+    {
+      "job_id": "de6398d772b5c3df0nd-2N-_GVBT",
+      "security_id": "gCMFWKJTy4R2c-y1YcsO_QS8iMQoiajeCzE5Hmz_LampSxuilWlm03pnB9avL5-VKg25FmjOjQ9c_1jBpliU8ly-9K4_m4CHrdSsgkJzcD5d-0Eb6J76lrj8N1g9IpYYOSq20gBdMtPV6wFR1Rn6U1UPFTmeWHroQLfpTA2ftzGZXBNsB5c5XO9y7wv2r6OU4ZC2aSbtPVRcMa2av6WNqOc4Cf4fD__X0afFSgFJGDrD6GC3grgUHqd_ywYJ7HEXZelzHyy8E0iNxcCAy4DCItTt5kx39zb3IFIHLiJh61fHJ1OpMwolT6pCND1IR_L4zUyTdzlbi71-TWdn1o6aOQUt_8vRPJw0-tYABBlVDmKZnxpd_PKaydxXU5Og",
+      "job_name": "AI agent开发",
+      "company_name": "云造科技",
+      "salary_desc": "7-10K",
+      "salary_min": 7000,
+      "salary_max": 10000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "1-3年",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "1-3年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "未融资",
+      "brand_scale": "20-99人",
+      "brand_industry": "电子/硬件开发"
+    },
+    {
+      "job_id": "0d7e9f51d1998273031z3tq7E1pT",
+      "security_id": "6AoKiTYnKsnzB-91-NHpzbPXcwhFtcQxBo23dChboGxYlS8kIGmAJ_NPK_7ccuQg37-v_xoD8RBfc9G5wHrRNzM6vnDQ_st44L00c42_kVM9RnvKBh0iItFOx_VNsoHvH2sxlkVuDTflqO4TgfnEDg9W65-MziUB9qKrh--b2-VCOrB3R_tTd7Io7J6_qKvyDM-EriEDwX1eCGhIt2eMcfADXvm-4_17NPcxwaJcJyfPkK48OO_NonKPU9aTsAcA16wP8WSfOOKvNVkxRlow4W2bBkNLZtXGFMfeL3UhKDUB6mVni5rmy76g7WmitJwEWf0noDW-kPABTc45JixzrmF31dKbXNQiMbDswJ_CsjKQhzf8elt0MeB3wCg~",
+      "job_name": "AI Agent开发工程师",
+      "company_name": "四方精创",
+      "salary_desc": "18-28K",
+      "salary_min": 18000,
+      "salary_max": 28000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "3-5年",
+      "education": "本科",
+      "skills": [
+        "AI",
+        "Python"
+      ],
+      "job_labels": [
+        "3-5年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "已上市",
+      "brand_scale": "1000-9999人",
+      "brand_industry": "计算机软件"
+    },
+    {
+      "job_id": "4d7523546f8498790nZy39m9EVJQ",
+      "security_id": "G4YeGG2VkAABm-T1VFKuFrkSyGKvYM7l2wRHOUWm3r42ICrnwSD4tHOrC2P_g_VtUy-zabG7kkZHmiLhVb8DO3FdDZwIdq7Cv-7dKhTNSduI4IpFHSqjkZV8OX0Nc3Xi-rM_T02CbS7nHg1c8uHbhVApsAqz1MIIPpx02FEZObWEjTn649a7h6DjeYrwiyU-KhPfqOmWk-pLOgZfzlnFcPI2eWqbhBwRsDbOK2MoF2yVSx8H_qdjdqBNM4chqGD6XD9zDhbQwsn3Oop0IxYk_pAECMgxl7d4J4Sq-mKiIfRxuejDt4IsZbyaNOeGyaTi2lL0hC2Uq3m8kh39l2a0PvzqXWzPOCLGBCxvHwIGshiMs4i2R0slJfep8J1y",
+      "job_name": "AI Agent 开发实习生（可转正）",
+      "company_name": "新产业创投",
+      "salary_desc": "300-600元/天",
+      "salary_min": 300,
+      "salary_max": 600,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "4天/周",
+        "3个月",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "不需要融资",
+      "brand_scale": "20-99人",
+      "brand_industry": "投资/融资"
+    },
+    {
+      "job_id": "3e6ee5e8a59c3d4e0nd62t26ElZS",
+      "security_id": "aZxlGPuYCCIvt-a1McFlbZJ8BFp6mPCgD5wlfHfjEkPOE7DJFpXRyTaCi475HLCQOciZuyyMvhID3U4wdCxTTWFS6cZWZelOKsjGTyklIqpYkSKDo-_KKXjI-CedGAqAsd8Tt9i4QxCgoBMhGpGRJrdcxY0Hb2VjTrifoRnHqYZkbsTJZyVuRtJ2mXvXcSAYuPp0d017htV-bI2XlsmjNXi-3YIFjVKF4Mat4MIZjK5BEW3FCn57fKHlxUQPFL2-H4XUdY-CwPXFlkXhkK9WKqFEr_AGgCt_m1JJJVQ0eh-D7LDBlin29dCtwiy4RxfIRtaKWR9OfLcRkAiIqY03DVJT0YCl2kGVhbDU-0y85vDptItcIRz1qKrG9brqzw~~",
+      "job_name": "AI Agent开发工程师",
+      "company_name": "慕雅居水暖",
+      "salary_desc": "15-25K",
+      "salary_min": 15000,
+      "salary_max": 25000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "3-5年",
+      "education": "本科",
+      "skills": [
+        "AI Agent"
+      ],
+      "job_labels": [
+        "3-5年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "不需要融资",
+      "brand_scale": "500-999人",
+      "brand_industry": "电子商务"
+    },
+    {
+      "job_id": "b9cd94be0e1ee2c80nd43924GVFQ",
+      "security_id": "3W0AyxlR_7TjX-U1USZwWwEQOUirIdq1NDEYa2I90TiEcErTOy-cEXcXVGsp8813-R_4o2xGMVtzkL2yQS2d49nyk94PzJX__lQGoA-8Hu9WDI3s9RVM0liEkv01cRRW9UQWfGgGGC60CBH3pxn2ujyI3xPdkYZhXiNV4adyadhWrYYVr9VpmPGyz3af_haRZroFIuNcQC43rfjtoUCkY-IMfT29K-EGeEqtbIw9EZvN9gik87fkA2Z1YB27o8mhrnPHn-SmJLHm7VBESBsTxKanVsDU3wzW-B5teNEWgEs00O2hXG59JE9GyD1oSKoifMEb-U3-WMY6Rl5o_K1oz69lxog-XHFSFVZdo40CNl5_WZ-4Lj9kJO_8rUNskA~~",
+      "job_name": "agent开发",
+      "company_name": "深圳某中型计算机软件公司",
+      "salary_desc": "65-95K",
+      "salary_min": 65000,
+      "salary_max": 95000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "经验不限",
+      "education": "学历不限",
+      "skills": [],
+      "job_labels": [
+        "经验不限",
+        "学历不限"
+      ],
+      "description": "",
+      "brand_stage": "",
+      "brand_scale": "100-499人",
+      "brand_industry": "计算机软件"
+    },
+    {
+      "job_id": "39f5a96dcf9505290nZ93NW8EFNT",
+      "security_id": "uYpor8YvqZ9O6-e1ZHVewm3qaxLg6csSXx16mID1P6n8R7EbN0oXbFw9lwfetdlCeLTBAw0SXFdouyFOOzp-04jEh10ssFqUzPARe_5ZT1cnQh87BF4r1o6Eacl3STBiHZIMDZqZqedFc-vat-6I3HwgLr1uGZgXpvNpnaYi88Jz60bOppH9REhgjr084DtibMXRS-wKzQdeH0vuA52zQWK7j-5Zby24GDD7hyuYE_BwhnwablS2DknKfPTwzuz-GsBl5V89RDvRwZXc898HL3sfj1bLpbiNgXz57d9ELdq877SDZZJz_USQKmSoUzjAE9GlUDz27h9t4TU5MP9rFNxxFZ2jW3M4ais4xZYRjk335w4m3YY9l7Ygs7hI",
+      "job_name": "AI Agent开发",
+      "company_name": "某知名上市集团公司",
+      "salary_desc": "80-110K",
+      "salary_min": 80000,
+      "salary_max": 110000,
+      "salary_months": 12,
+      "city_name": "深圳",
+      "experience": "5-10年",
+      "education": "本科",
+      "skills": [],
+      "job_labels": [
+        "5-10年",
+        "本科"
+      ],
+      "description": "",
+      "brand_stage": "",
+      "brand_scale": "1000-9999人",
+      "brand_industry": "计算机硬件"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "pages_fetched": 2,
+    "has_more": true,
+    "total": 30
+  },
+  "error": null,
+  "hints": {
+    "next_actions": [
+      "bco evaluate --from-search",
+      "bco detail <security_id>"
+    ]
+  }
+}

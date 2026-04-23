@@ -1,0 +1,76 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+.venv/
+.env
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+*.log
+debug.log
+
+.bco/
+.boss_career_ops/  # 旧版目录兼容，数据已迁移到 .bco/
+
+.idea/
+.vscode/
+*.swp
+*.swo
+
+.DS_Store
+Thumbs.db
+
+
+# 测试产生的临时文件
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# IDE 特定文件
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# 操作系统文件
+desktop.ini
+
+# 本地缓存和数据库（如果存储在项目目录）
+*.sqlite
+*.sqlite3
+*.db
+
+# Trae IDE 开发配置（开发规划文件，无需上传）
+.trae/
+
+# AI Agent 上下文文件（开发辅助，无需上传）
+CLAUDE.md
+GEMINI.md
+.learnings/
+
+# 开发文档（本地草稿，无需上传）
+doc/
+
+# 运行产物输出目录
+output/
+
+# 根目录临时脚本（agent 调试产物，禁止提交）
+/*.py
+check_*.py
+diagnose_*.py
+parse_pipeline.py
+search*.py
+result*.json
+search_results*.json
