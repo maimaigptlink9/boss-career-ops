@@ -252,6 +252,16 @@ def dashboard():
     run_dashboard()
 
 
+@cli.command()
+@click.option("--host", default="127.0.0.1", help="绑定地址")
+@click.option("--port", default=8080, type=int, help="端口号")
+@click.option("--no-browser", is_flag=True, help="不自动打开浏览器")
+def web(host, port, no_browser):
+    """启动 Web 决策仪表盘"""
+    from boss_career_ops.commands.web import run_web
+    run_web(host=host, port=port, no_browser=no_browser)
+
+
 @cli.group()
 def bridge():
     """Bridge Daemon 管理"""

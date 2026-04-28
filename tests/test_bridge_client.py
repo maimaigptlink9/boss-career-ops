@@ -1,4 +1,7 @@
+import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
+
+import pytest
 
 from boss_career_ops.bridge.client import BridgeClient, DEFAULT_BRIDGE_URL
 from boss_career_ops.bridge.protocol import BridgeCommand, CommandType, BridgeResult
@@ -44,9 +47,9 @@ class TestBridgeClient:
         assert "不可用" in result.error
 
     @patch.object(BridgeClient, "is_available", return_value=True)
-    @patch("boss_career_ops.bridge.client.asyncio.run")
-    def test_send_command_success(self, mock_run, mock_avail):
-        mock_run.return_value = {"ok": True, "data": {"url": "https://zhipin.com"}, "id": "42"}
+    @patch.object(BridgeClient, "_ws_send", new_callable=AsyncMock)
+    def test_send_command_success(self, mock_ws, mock_avail):
+        mock_ws.return_value = {"ok": True, "data": {"url": "https://zhipin.com"}, "id": "42"}
         client = BridgeClient()
         cmd = BridgeCommand(type=CommandType.NAVIGATE, params={"url": "https://zhipin.com"}, id="42")
         result = client.send_command(cmd)
@@ -55,8 +58,8 @@ class TestBridgeClient:
         assert result.id == "42"
 
     @patch.object(BridgeClient, "is_available", return_value=True)
-    @patch("boss_career_ops.bridge.client.asyncio.run", side_effect=Exception("ws 连接失败"))
-    def test_send_command_ws_error(self, mock_run, mock_avail):
+    @patch.object(BridgeClient, "_ws_send", new_callable=AsyncMock, side_effect=Exception("ws 连接失败"))
+    def test_send_command_ws_error(self, mock_ws, mock_avail):
         client = BridgeClient()
         cmd = BridgeCommand(type=CommandType.PING, id="1")
         result = client.send_command(cmd)
@@ -102,3 +105,59 @@ class TestBridgeClient:
             client.get_cookies()
             cmd = mock_send.call_args[0][0]
             assert cmd.type == CommandType.GET_COOKIES
+
+
+class TestBridgeClientAsync:
+    @patch.object(BridgeClient, "is_available", return_value=False)
+    @pytest.mark.asyncio
+    async def test_send_command_async_unavailable(self, mock_avail):
+        client = BridgeClient()
+        cmd = BridgeCommand(type=CommandType.PING, id="1")
+        result = await client.send_command_async(cmd)
+        assert result.ok is False
+        assert "不可用" in result.error
+
+    @patch.object(BridgeClient, "is_available", return_value=True)
+    @patch.object(BridgeClient, "_ws_send", new_callable=AsyncMock)
+    @pytest.mark.asyncio
+    async def test_send_command_async_success(self, mock_ws, mock_avail):
+        mock_ws.return_value = {"ok": True, "data": {"cookies": []}, "id": "abc"}
+        client = BridgeClient()
+        cmd = BridgeCommand(type=CommandType.GET_COOKIES, id="abc")
+        result = await client.send_command_async(cmd)
+        assert result.ok is True
+        assert result.data == {"cookies": []}
+        assert result.id == "abc"
+
+    @patch.object(BridgeClient, "is_available", return_value=True)
+    @patch.object(BridgeClient, "_ws_send", new_callable=AsyncMock, side_effect=Exception("ws 断开"))
+    @pytest.mark.asyncio
+    async def test_send_command_async_error(self, mock_ws, mock_avail):
+        client = BridgeClient()
+        cmd = BridgeCommand(type=CommandType.PING, id="1")
+        result = await client.send_command_async(cmd)
+        assert result.ok is False
+        assert "ws 断开" in result.error
+
+
+class TestBridgeClientSyncFromAsync:
+    @patch.object(BridgeClient, "is_available", return_value=True)
+    @patch.object(BridgeClient, "_ws_send", new_callable=AsyncMock)
+    @pytest.mark.asyncio
+    async def test_send_command_from_async_context(self, mock_ws, mock_avail):
+        mock_ws.return_value = {"ok": True, "data": {"url": "https://zhipin.com"}, "id": "42"}
+        client = BridgeClient()
+        cmd = BridgeCommand(type=CommandType.NAVIGATE, params={"url": "https://zhipin.com"}, id="42")
+        result = await asyncio.to_thread(client.send_command, cmd)
+        assert result.ok is True
+        assert result.data == {"url": "https://zhipin.com"}
+
+    @patch.object(BridgeClient, "is_available", return_value=True)
+    @patch.object(BridgeClient, "_ws_send", new_callable=AsyncMock)
+    def test_send_command_from_sync_context(self, mock_ws, mock_avail):
+        mock_ws.return_value = {"ok": True, "data": {"url": "https://zhipin.com"}, "id": "42"}
+        client = BridgeClient()
+        cmd = BridgeCommand(type=CommandType.NAVIGATE, params={"url": "https://zhipin.com"}, id="42")
+        result = client.send_command(cmd)
+        assert result.ok is True
+        assert result.data == {"url": "https://zhipin.com"}

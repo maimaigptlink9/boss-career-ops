@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 def _build_display_name(job, profile) -> str:
     name = getattr(profile, "name", "") or "未命名"
-    job_name = job.job_name if hasattr(job, 'job_name') else job.get("jobName", "")
+    job_name = job.job_name if hasattr(job, 'job_name') else job.get("job_name", "")
     return f"{name}_{job_name}.pdf"
 
 
@@ -25,7 +25,7 @@ def run_resume(job_id: str, fmt: str, upload: bool = False):
         if not job:
             output_error(command="resume", message="获取职位详情失败", code="DETAIL_ERROR")
             return
-        job_dict = job.raw_data if job.raw_data else job.to_dict()
+        job_dict = job.to_dict()
         generator = ResumeGenerator()
         resume_md = None
         # 检查 Agent 润色结果

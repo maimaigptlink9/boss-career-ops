@@ -3,7 +3,7 @@ import json
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from boss_career_ops.agent.llm import get_llm, is_llm_available
-from boss_career_ops.agent.prompts import ORCHESTRATOR_SYSTEM, ORCHESTRATOR_USER
+from boss_career_ops.agent.prompts import ORCHESTRATOR_SYSTEM, ORCHESTRATOR_USER, sanitize_input
 from boss_career_ops.display.logger import get_logger
 
 logger = get_logger(__name__)
@@ -59,7 +59,7 @@ async def run(state: dict) -> dict:
 
     try:
         system_msg = SystemMessage(content=ORCHESTRATOR_SYSTEM)
-        user_msg = HumanMessage(content=ORCHESTRATOR_USER.format(query=query))
+        user_msg = HumanMessage(content=ORCHESTRATOR_USER.safe_substitute(query=sanitize_input(query)))
         response = await llm.ainvoke([system_msg, user_msg])
         content = response.content
 

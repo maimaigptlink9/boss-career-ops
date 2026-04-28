@@ -67,7 +67,7 @@ class BossAdapter(PlatformAdapter):
         self._browser = BossBrowserAdapter(cdp_url=cdp_url, bridge_url=bridge_url)
 
     def search(self, params: dict[str, Any]) -> list[Job]:
-        resp = self._client.get("search", params=params)
+        resp = self._client.post("search", json_data=params)
         if resp.get("_risk_blocked"):
             return self._search_via_browser(params)
         if resp.get("code") != 0:
@@ -167,37 +167,55 @@ class BossAdapter(PlatformAdapter):
             page_obj.wait_for_timeout(1000)
             browser.add_cookies(cookies_for_browser)
 
-            page_obj.goto("https://www.zhipin.com/web/geek/job?query=", wait_until="domcontentloaded", timeout=15000)
-            page_obj.wait_for_timeout(3000)
+            api_response = {}
 
-            api_url = f"/wapi/zpgeek/job/detail.json?securityId={security_id}"
-            js_code = f"""
-            async () => {{
-                try {{
-                    const resp = await fetch("{api_url}", {{
-                        method: "GET",
-                        credentials: "include",
-                        headers: {{
-                            "Accept": "application/json",
-                        }},
-                    }});
-                    const data = await resp.json();
-                    return data;
-                }} catch (e) {{
-                    return {{_fetch_error: e.message}};
-                }}
-            }}
-            """
-            result = page_obj.evaluate(js_code)
+            def _handle_response(response):
+                if "job/detail.json" in response.url:
+                    try:
+                        data = response.json()
+                        if data.get("code") == 0:
+                            api_response["data"] = data
+                    except Exception:
+                        pass
+
+            page_obj.on("response", _handle_response)
+            try:
+                detail_url = f"https://www.zhipin.com/web/geek/job?query="
+                page_obj.goto(detail_url, wait_until="domcontentloaded", timeout=15000)
+                page_obj.wait_for_timeout(3000)
+
+                from boss_career_ops.pipeline.manager import PipelineManager
+                job_id = ""
+                try:
+                    with PipelineManager() as pm:
+                        jobs = pm.list_jobs()
+                        for j in jobs:
+                            if j.get("security_id") == security_id:
+                                job_id = j.get("job_id", "")
+                                break
+                except Exception:
+                    pass
+
+                if job_id:
+                    nav_url = JOB_DETAIL_URL.format(job_id=job_id)
+                    page_obj.goto(nav_url, wait_until="domcontentloaded", timeout=15000)
+                    page_obj.wait_for_timeout(5000)
+                else:
+                    page_obj.close()
+                    logger.warning("无法获取 job_id，浏览器导航获取职位详情失败: %s", security_id[:20])
+                    return None
+            except Exception as e:
+                logger.warning("浏览器职位详情页面加载超时: %s", e)
             page_obj.close()
 
-            if result and isinstance(result, dict) and result.get("code") == 0:
+            result = api_response.get("data")
+            if result and result.get("code") == 0:
                 job_info = result.get("zpData", {}).get("jobInfo", {})
                 if job_info:
                     job_info["securityId"] = security_id
-                    logger.info("浏览器通道获取职位详情成功 (fetch): %s", security_id[:20])
+                    logger.info("浏览器通道获取职位详情成功 (导航+拦截): %s", security_id[:20])
                     return self._mapper.map_job(job_info)
-            logger.warning("浏览器通道获取职位详情失败: code=%s", result.get("code") if result else "无响应")
+            logger.warning("浏览器通道获取职位详情失败: 无有效响应")
         except Exception as e:
             logger.warning("浏览器通道获取职位详情失败: %s", e)
         return None
@@ -230,8 +248,8 @@ class BossAdapter(PlatformAdapter):
             before_result = await hooks.execute_before("apply_before", {"security_id": security_id, "job_id": job_id})
             if before_result.action.value == "veto":
                 return OperationResult(ok=False, message=f"Hook veto: {before_result.reason}", code=ErrorCode.HOOK_VETO)
-            bridge = BridgeClient()
-            if bridge.is_available():
+            if self._browser.inner.is_bridge_available():
+                bridge = BridgeClient()
                 result = self._apply_via_bridge(bridge, security_id, job_id)
                 if result.ok:
                     await hooks.execute_after("apply_after", {"security_id": security_id, "job_id": job_id, "result": "success"})
@@ -300,10 +318,12 @@ class BossAdapter(PlatformAdapter):
         resp = self._client.get("chat_list")
         if resp.get("code") != 0:
             return []
-        chat_list = resp.get("zpData", {}).get("list", [])
+        zp_data = resp.get("zpData", {})
+        chat_list = zp_data.get("groupList", []) or zp_data.get("list", [])
         return [self._mapper.map_contact(c) for c in chat_list]
 
     def get_chat_messages(self, security_id: str) -> list[ChatMessage]:
+        logger.warning("chat_messages HTTP API 已废弃，需迁移至 WebSocket 通道")
         resp = self._client.get("chat_messages", params={"securityId": security_id})
         if resp.get("code") != 0:
             return []

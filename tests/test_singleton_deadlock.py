@@ -20,6 +20,7 @@ import sys
 import tempfile
 import textwrap
 import threading
+import warnings
 from pathlib import Path
 
 from boss_career_ops.config.singleton import SingletonMeta
@@ -184,3 +185,107 @@ print("completed")
     )
     assert result.returncode == 0, result.stderr
     assert "completed" in result.stdout
+
+
+class TestReloadInstance:
+    def test_reload_instance_resets_and_recreates(self):
+        class Counter(metaclass=SingletonMeta):
+            def __init__(self):
+                self.count = 0
+
+        SingletonMeta.reset(Counter)
+        obj1 = Counter()
+        obj1.count = 42
+        assert obj1.count == 42
+
+        obj2 = SingletonMeta.reload_instance(Counter)
+        assert obj2 is not obj1
+        assert obj2.count == 0
+
+        obj3 = Counter()
+        assert obj3 is obj2
+        SingletonMeta.reset(Counter)
+
+    def test_reload_instance_returns_new_instance(self):
+        class Tag(metaclass=SingletonMeta):
+            def __init__(self, tag="default"):
+                self.tag = tag
+
+        SingletonMeta.reset(Tag)
+        obj1 = Tag(tag="first")
+        assert obj1.tag == "first"
+
+        obj2 = SingletonMeta.reload_instance(Tag)
+        assert obj2.tag == "default"
+        assert obj2 is not obj1
+        SingletonMeta.reset(Tag)
+
+
+class TestParameterChangeDetection:
+    def test_warning_on_args_after_init(self):
+        class Config(metaclass=SingletonMeta):
+            def __init__(self, value=0):
+                self.value = value
+
+        SingletonMeta.reset(Config)
+        obj1 = Config(value=1)
+        assert obj1.value == 1
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            obj2 = Config(value=999)
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
+            assert "单例已初始化" in str(w[0].message)
+            assert "reload_instance" in str(w[0].message)
+
+        assert obj2 is obj1
+        assert obj2.value == 1
+        SingletonMeta.reset(Config)
+
+    def test_no_warning_on_no_args(self):
+        class Simple(metaclass=SingletonMeta):
+            def __init__(self):
+                self.x = 1
+
+        SingletonMeta.reset(Simple)
+        Simple()
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            Simple()
+            assert len(w) == 0
+        SingletonMeta.reset(Simple)
+
+    def test_warning_on_positional_args(self):
+        class Box(metaclass=SingletonMeta):
+            def __init__(self, size=10):
+                self.size = size
+
+        SingletonMeta.reset(Box)
+        Box()
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            Box(99)
+            assert len(w) == 1
+            assert issubclass(w[0].category, UserWarning)
+        SingletonMeta.reset(Box)
+
+
+class TestEndpointsUsesSingletonMeta:
+    def test_endpoints_is_singleton(self):
+        from boss_career_ops.boss.api.endpoints import Endpoints
+
+        SingletonMeta.reset(Endpoints)
+        e1 = Endpoints()
+        e2 = Endpoints()
+        assert e1 is e2
+        SingletonMeta.reset(Endpoints)
+
+    def test_endpoints_has_reload_instance(self):
+        from boss_career_ops.boss.api.endpoints import Endpoints
+
+        SingletonMeta.reset(Endpoints)
+        e1 = Endpoints()
+        e2 = SingletonMeta.reload_instance(Endpoints)
+        assert e1 is not e2
+        SingletonMeta.reset(Endpoints)

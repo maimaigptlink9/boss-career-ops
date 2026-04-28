@@ -42,17 +42,29 @@ class TestFindMatchingResumes:
 
 class TestGetSkillMarketDemand:
     @patch("boss_career_ops.rag.retriever.VectorStore")
-    def test_get_skill_market_demand(self, mock_vs_cls):
+    def test_get_skill_market_demand_batch_query(self, mock_vs_cls):
         mock_store = MagicMock()
         mock_vs_cls.return_value = mock_store
-        mock_store.search_jd.side_effect = [
-            [{"id": f"jd{i}"} for i in range(5)],
-            [{"id": f"jd{i}"} for i in range(3)],
+        mock_store.search_jd.return_value = [
+            {"id": "jd1", "content": "需要Python和Go开发经验"},
+            {"id": "jd2", "content": "Python后端开发岗位"},
+            {"id": "jd3", "content": "Go微服务开发"},
+            {"id": "jd4", "content": "Java开发工程师"},
         ]
         retriever = Retriever()
         demand = retriever.get_skill_market_demand(["Python", "Go"])
-        assert demand["Python"] == 5
-        assert demand["Go"] == 3
+        mock_store.search_jd.assert_called_once_with("Python OR Go", n=500)
+        assert demand["Python"] == 2
+        assert demand["Go"] == 2
+
+    @patch("boss_career_ops.rag.retriever.VectorStore")
+    def test_get_skill_market_demand_empty_skills(self, mock_vs_cls):
+        mock_store = MagicMock()
+        mock_vs_cls.return_value = mock_store
+        retriever = Retriever()
+        demand = retriever.get_skill_market_demand([])
+        assert demand == {}
+        mock_store.search_jd.assert_not_called()
 
     @patch("boss_career_ops.rag.retriever.VectorStore")
     def test_get_skill_market_demand_with_error(self, mock_vs_cls):

@@ -1,13 +1,55 @@
 import pytest
+from unittest.mock import patch
 
 from boss_career_ops.platform.models import Job
 from boss_career_ops.config.singleton import SingletonMeta
+
+
+@pytest.fixture(autouse=True)
+def _cleanup_singletons():
+    yield
+    SingletonMeta._instances.clear()
 
 
 @pytest.fixture
 def tmp_dir(tmp_path):
     SingletonMeta._instances.clear()
     return tmp_path
+
+
+@pytest.fixture
+def make_engine():
+    from boss_career_ops.evaluator.engine import EvaluationEngine
+    from boss_career_ops.config.settings import Settings, Profile
+
+    def _make_engine(profile=None, cv_content=""):
+        with patch.object(Settings, '__init__', lambda self, *a, **kw: None):
+            settings = Settings()
+            settings.profile = profile or Profile()
+            settings.cv_content = cv_content
+            engine = EvaluationEngine()
+            engine._settings = settings
+            return engine
+
+    yield _make_engine
+    SingletonMeta.reset(EvaluationEngine)
+
+
+@pytest.fixture
+def pipeline_manager(tmp_path):
+    from boss_career_ops.pipeline.manager import PipelineManager
+
+    SingletonMeta.reset(PipelineManager)
+    pm = PipelineManager(db_path=tmp_path / "test_pipeline.db")
+    yield pm
+    SingletonMeta.reset(PipelineManager)
+
+
+@pytest.fixture
+def mock_adapter(mocker):
+    adapter = mocker.MagicMock()
+    mocker.patch("boss_career_ops.platform.registry.get_active_adapter", return_value=adapter)
+    return adapter
 
 
 @pytest.fixture

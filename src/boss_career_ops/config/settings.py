@@ -6,6 +6,7 @@ from typing import Any
 import yaml
 
 from boss_career_ops.config.singleton import SingletonMeta
+from boss_career_ops.errors import ConfigError
 from boss_career_ops.display.logger import get_logger
 
 logger = get_logger(__name__)
@@ -22,8 +23,8 @@ RESUMES_DIR = BCO_HOME / "resumes"
 
 @dataclass
 class SalaryExpectation:
-    min: int = 0
-    max: int = 0
+    min: int | None = None
+    max: int | None = None
 
 
 @dataclass
@@ -58,14 +59,19 @@ class Settings(metaclass=SingletonMeta):
             with open(self._profile_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
             salary_data = data.get("expected_salary", {})
+            salary_min = salary_data.get("min") if isinstance(salary_data, dict) else None
+            salary_max = salary_data.get("max") if isinstance(salary_data, dict) else None
+            if salary_min is not None and salary_max is not None and salary_max > 0 and salary_min > salary_max:
+                raise ConfigError("期望薪资下限不能高于上限", code="INVALID_SALARY_RANGE")
+            experience_years = max(0, int(data.get("experience_years", 0)))
             return Profile(
                 name=data.get("name", ""),
                 title=data.get("title", ""),
-                experience_years=data.get("experience_years", 0),
+                experience_years=experience_years,
                 skills=data.get("skills", []),
                 expected_salary=SalaryExpectation(
-                    min=salary_data.get("min", 0) if isinstance(salary_data, dict) else 0,
-                    max=salary_data.get("max", 0) if isinstance(salary_data, dict) else 0,
+                    min=salary_min,
+                    max=salary_max,
                 ),
                 preferred_cities=data.get("preferred_cities", []),
                 remote_ok=data.get("remote_ok", False),

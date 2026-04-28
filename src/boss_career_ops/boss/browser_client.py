@@ -33,34 +33,42 @@ ANTI_REDIRECT_JS = """
     const origPushState = History.prototype.pushState;
     History.prototype.pushState = function(state, title, url) {
         if (url && shouldBlock(url)) { console.warn('[BCO] 拦截 pushState:', url); return; }
-        return origPushState.call(this, state, title, url);
+        return origPushState.call(this, url);
     };
 }
 """
+
+DEFAULT_BRIDGE_URL = "http://127.0.0.1:18765"
 
 
 class BrowserClient(metaclass=SingletonMeta):
     def __init__(self, cdp_url: str | None = None, bridge_url: str | None = None):
         self._cdp_url = cdp_url
-        self._bridge_url = bridge_url
+        self._bridge_url = bridge_url or DEFAULT_BRIDGE_URL
         self._browser = None
         self._context = None
         self._pw = None
+        self._bridge_available: bool | None = None
 
     def reset(self):
         self.close()
 
-    def _connect_bridge(self) -> bool:
-        if not self._bridge_url:
-            return False
+    def is_bridge_available(self) -> bool:
+        if self._bridge_available is not None:
+            return self._bridge_available
         try:
             import httpx
-            resp = httpx.get(f"{self._bridge_url}/status", timeout=5.0)
+            with httpx.Client(proxy=None) as client:
+                resp = client.get(f"{self._bridge_url}/status", timeout=5.0)
             if resp.status_code == 200:
-                logger.info("Bridge 连接成功")
-                return True
+                data = resp.json()
+                if data.get("extensions_connected", 0) > 0:
+                    self._bridge_available = True
+                    logger.info("Bridge 可用（扩展已连接）")
+                    return True
         except Exception:
             pass
+        self._bridge_available = False
         return False
 
     def _connect_cdp(self) -> bool:
@@ -104,7 +112,7 @@ class BrowserClient(metaclass=SingletonMeta):
     def ensure_connected(self) -> bool:
         if self._context:
             return True
-        for method in [self._connect_bridge, self._connect_cdp, self._connect_patchright]:
+        for method in [self._connect_cdp, self._connect_patchright]:
             if method():
                 return True
         return False
@@ -129,3 +137,4 @@ class BrowserClient(metaclass=SingletonMeta):
         self._browser = None
         self._context = None
         self._pw = None
+        self._bridge_available = None

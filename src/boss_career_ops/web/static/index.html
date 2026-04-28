@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Boss Career Ops — AI 求职决策仪表盘</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div x-data="app()" x-init="init()">
+
+    <nav class="navbar">
+        <div class="nav-brand" @click="navigate('#/dashboard')">Boss Career Ops</div>
+        <div class="nav-links">
+            <a :class="{'active': currentPage==='dashboard'}" @click="navigate('#/dashboard')">决策看板</a>
+            <a :class="{'active': currentPage==='assistant'}" @click="navigate('#/assistant')">AI 助手</a>
+            <a :class="{'active': currentPage==='settings'}" @click="navigate('#/settings')">设置</a>
+        </div>
+    </nav>
+
+    <!-- 决策看板 -->
+    <div x-show="currentPage==='dashboard'" class="page">
+        <div class="section-title">求职进度</div>
+        <div class="pipeline-steps">
+            <template x-for="(s, i) in stageOrder" :key="s">
+                <div class="pipeline-step">
+                    <div class="step-count" x-text="stageCounts[s] || 0"></div>
+                    <div class="step-label" x-text="stageLabels[s] || s"></div>
+                    <div x-show="i < stageOrder.length - 1" class="step-arrow">→</div>
+                </div>
+            </template>
+        </div>
+
+        <div class="section-title">推荐投递（A/B 级职位）</div>
+        <div class="job-cards">
+            <template x-for="job in recommendedJobs" :key="job.job_id">
+                <div class="job-card" :class="'grade-' + (job.grade || '').toLowerCase()" @click="selectJob(job.job_id)">
+                    <div class="card-header">
+                        <span class="grade-badge" :class="'badge-' + (job.grade || '').toLowerCase()" x-text="job.grade || '?'"></span>
+                        <span class="company" x-text="job.company_name || ''"></span>
+                        <span class="separator">·</span>
+                        <span class="title" x-text="job.job_name || ''"></span>
+                    </div>
+                    <div class="card-salary" x-text="job.salary_desc || ''"></div>
+                    <template x-if="job.scores">
+                        <div class="card-scores">
+                            <template x-for="dim in scoreDimensions" :key="dim">
+                                <div class="score-row">
+                                    <span class="score-label" x-text="dim"></span>
+                                    <div class="score-bar-bg">
+                                        <div class="score-bar-fill" :style="'width:' + scoreWidth(job.scores[dim]) + '%'" :class="scoreBarClass(job.scores[dim])"></div>
+                                    </div>
+                                    <span class="score-value" x-text="(job.scores[dim] || 0).toFixed(1)"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    <template x-if="job.match_reasons && job.match_reasons.length">
+                        <div class="card-reasons">
+                            <template x-for="r in job.match_reasons" :key="r">
+                                <span class="reason-match" x-text="'✅ ' + r"></span>
+                            </template>
+                        </div>
+                    </template>
+                    <template x-if="job.mismatch_reasons && job.mismatch_reasons.length">
+                        <div class="card-reasons">
+                            <template x-for="r in job.mismatch_reasons" :key="r">
+                                <span class="reason-mismatch" x-text="'⚠️ ' + r"></span>
+                            </template>
+                        </div>
+                    </template>
+                    <div class="card-actions">
+                        <button class="btn btn-sm" @click.stop="greetRecruiter(job)">打招呼</button>
+                        <button class="btn btn-sm" @click.stop="selectJob(job.job_id)">查看分析</button>
+                    </div>
+                </div>
+            </template>
+            <div x-show="recommendedJobs.length === 0" class="empty-state">暂无推荐职位，请先搜索或评估职位</div>
+        </div>
+
+        <div class="section-title">全部职位</div>
+        <div class="filter-bar">
+            <template x-for="s in stageOrder" :key="s">
+                <button class="btn btn-sm" :class="{'btn-primary': filterStage===s}" @click="setFilterStage(s)" x-text="stageLabels[s] || s"></button>
+            </template>
+            <button class="btn btn-sm" :class="{'btn-primary': !filterStage}" @click="setFilterStage('')">全部</button>
+        </div>
+        <div class="job-cards">
+            <template x-for="job in filteredJobs" :key="job.job_id">
+                <div class="job-card" :class="'grade-' + (job.grade || '').toLowerCase()" @click="selectJob(job.job_id)">
+                    <div class="card-header">
+                        <span class="grade-badge" :class="'badge-' + (job.grade || '').toLowerCase()" x-text="job.grade || '?'"></span>
+                        <span class="company" x-text="job.company_name || ''"></span>
+                        <span class="separator">·</span>
+                        <span class="title" x-text="job.job_name || ''"></span>
+                    </div>
+                    <div class="card-salary" x-text="job.salary_desc || ''"></div>
+                    <div class="card-actions">
+                        <button class="btn btn-sm" @click.stop="selectJob(job.job_id)">查看分析</button>
+                    </div>
+                </div>
+            </template>
+            <div x-show="filteredJobs.length === 0" class="empty-state">暂无职位数据</div>
+        </div>
+    </div>
+
+    <!-- 职位分析面板 -->
+    <div x-show="selectedJob && currentPage==='dashboard'" class="modal-overlay" @click.self="selectedJob=null">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="btn btn-sm" @click="selectedJob=null">← 返回</button>
+                <span x-text="(selectedJob?.company_name || '') + ' · ' + (selectedJob?.job_name || '')"></span>
+                <span class="grade-badge" :class="'badge-' + (selectedJob?.grade || '').toLowerCase()" x-text="selectedJob?.grade || ''"></span>
+            </div>
+            <template x-if="selectedJob && selectedJob.scores">
+                <div class="modal-body">
+                    <div class="section-title">匹配分析</div>
+                    <div class="detail-scores">
+                        <template x-for="dim in scoreDimensions" :key="dim">
+                            <div class="score-row detail-score-row">
+                                <span class="score-label" x-text="dim"></span>
+                                <div class="score-bar-bg">
+                                    <div class="score-bar-fill" :style="'width:' + scoreWidth(selectedJob.scores[dim]) + '%'" :class="scoreBarClass(selectedJob.scores[dim])"></div>
+                                </div>
+                                <span class="score-value" x-text="(selectedJob.scores[dim] || 0).toFixed(1) + '/5'"></span>
+                                <span class="score-weight" x-text="dimWeights[dim] + '%'"></span>
+                            </div>
+                        </template>
+                        <div class="total-score">
+                            加权总分：<strong x-text="(selectedJob.total_score || 0).toFixed(2)"></strong>/5
+                            → <span class="grade-badge" :class="'badge-' + (selectedJob.grade || '').toLowerCase()" x-text="selectedJob.grade"></span>
+                            → <span x-text="selectedJob.grade_label || ''"></span>
+                        </div>
+                    </div>
+                    <template x-if="selectedJob.match_reasons && selectedJob.match_reasons.length">
+                        <div>
+                            <div class="section-title">✅ 优势</div>
+                            <ul class="reason-list">
+                                <template x-for="r in selectedJob.match_reasons" :key="r">
+                                    <li x-text="r"></li>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+                    <template x-if="selectedJob.mismatch_reasons && selectedJob.mismatch_reasons.length">
+                        <div>
+                            <div class="section-title">⚠️ 不足</div>
+                            <ul class="reason-list">
+                                <template x-for="r in selectedJob.mismatch_reasons" :key="r">
+                                    <li x-text="r"></li>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+                    <template x-if="selectedJob.confidence === 'preliminary'">
+                        <div class="confidence-note" x-text="selectedJob.confidence_note"></div>
+                    </template>
+                    <div class="modal-actions">
+                        <button class="btn" @click="greetRecruiter(selectedJob)">打招呼</button>
+                        <button class="btn btn-primary" @click="navigate('#/assistant')">AI 助手</button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- AI 助手 -->
+    <div x-show="currentPage==='assistant'" class="page">
+        <div class="section-title">AI 助手</div>
+        <template x-if="!aiStatus.configured">
+            <div class="ai-not-configured">
+                <p>AI 功能需要配置 API Key</p>
+                <button class="btn btn-primary" @click="navigate('#/settings')">去设置</button>
+            </div>
+        </template>
+        <template x-if="aiStatus.configured">
+            <div>
+                <div class="tabs">
+                    <button class="tab" :class="{'active': aiTab==='reply'}" @click="aiTab='reply'">回复建议</button>
+                    <button class="tab" :class="{'active': aiTab==='resume'}" @click="aiTab='resume'">简历定制</button>
+                    <button class="tab" :class="{'active': aiTab==='interview'}" @click="aiTab='interview'">面试准备</button>
+                    <button class="tab" :class="{'active': aiTab==='gap'}" @click="aiTab='gap'">技能差距</button>
+                </div>
+                <div x-show="aiTab==='reply'" class="tab-content">
+                    <div class="form-group">
+                        <label>选择职位</label>
+                        <select x-model="aiJobId">
+                            <option value="">请选择</option>
+                            <template x-for="job in allJobs" :key="job.job_id">
+                                <option :value="job.job_id" x-text="(job.company_name||'') + ' · ' + (job.job_name||'')"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>对方消息</label>
+                        <textarea x-model="aiMessage" placeholder="粘贴对方发送的消息..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" @click="getReplySuggest()">生成回复建议</button>
+                    <template x-if="aiSuggestions.length">
+                        <div class="suggestions">
+                            <template x-for="(s, i) in aiSuggestions" :key="i">
+                                <div class="suggestion-card">
+                                    <div class="suggestion-text" x-text="s"></div>
+                                    <button class="btn btn-sm" @click="copyText(s)">复制</button>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+                <div x-show="aiTab==='resume'" class="tab-content">
+                    <p class="hint">选择职位后，AI 将根据 JD 关键词生成定制简历</p>
+                    <p class="hint">请使用 <code>bco resume JOB_ID</code> 命令生成简历</p>
+                </div>
+                <div x-show="aiTab==='interview'" class="tab-content">
+                    <p class="hint">选择职位后，AI 将生成面试准备方案</p>
+                    <p class="hint">请使用 <code>bco interview JOB_ID</code> 命令生成面试准备</p>
+                </div>
+                <div x-show="aiTab==='gap'" class="tab-content">
+                    <p class="hint">AI 将分析你的技能与目标职位的差距</p>
+                    <p class="hint">请使用 <code>bco agent-evaluate</code> 命令进行技能差距分析</p>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- 设置 -->
+    <div x-show="currentPage==='settings'" class="page">
+        <div class="section-title">个人档案</div>
+        <div class="settings-form">
+            <div class="form-group">
+                <label>姓名</label>
+                <input type="text" x-model="profile.name" placeholder="你的姓名">
+            </div>
+            <div class="form-group">
+                <label>职位方向</label>
+                <input type="text" x-model="profile.title" placeholder="如：Golang 后端">
+            </div>
+            <div class="form-group">
+                <label>期望薪资（K/月）</label>
+                <div class="salary-inputs">
+                    <input type="number" x-model="profile.expected_salary_min" placeholder="最低">
+                    <span>-</span>
+                    <input type="number" x-model="profile.expected_salary_max" placeholder="最高">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>偏好城市（逗号分隔）</label>
+                <input type="text" x-model="profile.preferred_cities_str" placeholder="如：广州, 深圳">
+            </div>
+            <div class="form-group">
+                <label>技能（逗号分隔）</label>
+                <input type="text" x-model="profile.skills_str" placeholder="如：Go, K8s, gRPC">
+            </div>
+            <button class="btn btn-primary" @click="saveProfile()">保存档案</button>
+            <span x-show="profileSaved" class="save-ok">已保存</span>
+        </div>
+
+        <div class="section-title">AI 配置</div>
+        <div class="settings-form">
+            <template x-if="aiStatus.configured">
+                <div class="ai-status ok">✅ AI 已启用（<span x-text="aiStatus.provider"></span>）</div>
+            </template>
+            <template x-if="!aiStatus.configured">
+                <div class="ai-status warn">⚠️ 未配置（使用规则引擎模式，评分/看板仍可用）</div>
+            </template>
+            <div class="form-group">
+                <label>AI 提供商</label>
+                <select x-model="aiProvider">
+                    <template x-for="p in providers" :key="p.id">
+                        <option :value="p.id" x-text="p.name + (p.recommended ? ' ⭐' : '')"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>API Key</label>
+                <input type="password" x-model="aiApiKey" placeholder="sk-xxxxxxxxxxxxxxx">
+            </div>
+            <template x-if="selectedProviderInfo">
+                <div class="provider-guide">
+                    <p x-show="selectedProviderInfo.register_url"><a :href="selectedProviderInfo.register_url" target="_blank">点击注册</a></p>
+                    <p x-show="selectedProviderInfo.api_key_url"><a :href="selectedProviderInfo.api_key_url" target="_blank">创建 API Key</a></p>
+                    <p x-show="selectedProviderInfo.free_tokens" class="free-tokens" x-text="'📢 ' + selectedProviderInfo.free_tokens"></p>
+                    <p x-show="selectedProviderInfo.pricing_hint" x-text="selectedProviderInfo.pricing_hint"></p>
+                </div>
+            </template>
+            <button class="btn btn-primary" @click="saveAiConfig()">保存 AI 配置</button>
+            <span x-show="aiConfigSaved" class="save-ok">已保存</span>
+        </div>
+
+        <div class="section-title">登录状态</div>
+        <div class="settings-form">
+            <template x-if="authStatus.ok">
+                <div class="ai-status ok">✅ BOSS 直聘已登录</div>
+            </template>
+            <template x-if="!authStatus.ok">
+                <div class="ai-status warn">❌ 未登录 → 请运行 <code>bco login</code></div>
+            </template>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js" defer></script>
+<script src="app.js"></script>
+</body>
+</html>

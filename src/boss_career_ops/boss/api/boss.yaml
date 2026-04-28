@@ -4,7 +4,7 @@ api_base: "https://www.zhipin.com/wapi/zpgeek"
 endpoints:
   search:
     path: "/wapi/zpgeek/search/joblist.json"
-    method: GET
+    method: POST
     description: "职位搜索"
 
   job_detail:
@@ -28,14 +28,16 @@ endpoints:
     description: "上传简历（浏览器通道专用）"
 
   chat_list:
-    path: "/wapi/zpgeek/chat/geekHistoryList.json"
+    path: "/wapi/zpchat/group/gravityGroupInfoList"
     method: GET
-    description: "聊天列表"
+    description: "聊天列表（gravityGroup 新接口）"
 
   chat_messages:
     path: "/wapi/zpgeek/chat/geekChatHistory.json"
     method: GET
-    description: "聊天消息"
+    description: "聊天消息（HTTP API 已废弃，需迁移至 WebSocket）"
+    deprecated: true
+    replacement: "WebSocket"
 
   recommend:
     path: "/wapi/zpgeek/recommend/job/list.json"
@@ -58,6 +60,6 @@ endpoints:
     description: "标记联系人"
 
   user_info:
-    path: "/wapi/zpgeek/user/info.json"
+    path: "/wapi/zpuser/wap/getUserInfo.json"
     method: GET
     description: "用户信息"

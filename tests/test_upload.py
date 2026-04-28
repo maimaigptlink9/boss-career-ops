@@ -18,13 +18,11 @@ class TestResumeUploader:
         pdf.write_text("fake pdf content")
         mock_browser = MagicMock()
         mock_browser.ensure_connected.return_value = False
-        with patch("boss_career_ops.resume.upload.BridgeClient") as MockBridge:
-            mock_bridge = MockBridge.return_value
-            mock_bridge.is_available.return_value = False
-            uploader = ResumeUploader(browser=mock_browser)
-            result = uploader.upload(pdf, "张三_Golang.pdf")
-            assert result["ok"] is False
-            assert result["code"] == ErrorCode.APPLY_BROWSER_ERROR
+        mock_browser.is_bridge_available.return_value = False
+        uploader = ResumeUploader(browser=mock_browser)
+        result = uploader.upload(pdf, "张三_Golang.pdf")
+        assert result["ok"] is False
+        assert result["code"] == ErrorCode.APPLY_BROWSER_ERROR
 
     def test_upload_via_browser_success(self, tmp_path):
         pdf = tmp_path / "test.pdf"
@@ -40,13 +38,11 @@ class TestResumeUploader:
         mock_browser = MagicMock()
         mock_browser.ensure_connected.return_value = True
         mock_browser.get_page.return_value = mock_page
-        with patch("boss_career_ops.resume.upload.BridgeClient") as MockBridge:
-            mock_bridge = MockBridge.return_value
-            mock_bridge.is_available.return_value = False
-            uploader = ResumeUploader(browser=mock_browser)
-            result = uploader.upload(pdf, "张三_Golang.pdf")
-            assert result["ok"] is True
-            assert "张三_Golang.pdf" in result.get("display_name", "")
+        mock_browser.is_bridge_available.return_value = False
+        uploader = ResumeUploader(browser=mock_browser)
+        result = uploader.upload(pdf, "张三_Golang.pdf")
+        assert result["ok"] is True
+        assert "张三_Golang.pdf" in result.get("display_name", "")
 
     def test_upload_no_file_input(self, tmp_path):
         pdf = tmp_path / "test.pdf"
@@ -56,13 +52,11 @@ class TestResumeUploader:
         mock_browser = MagicMock()
         mock_browser.ensure_connected.return_value = True
         mock_browser.get_page.return_value = mock_page
-        with patch("boss_career_ops.resume.upload.BridgeClient") as MockBridge:
-            mock_bridge = MockBridge.return_value
-            mock_bridge.is_available.return_value = False
-            uploader = ResumeUploader(browser=mock_browser)
-            result = uploader.upload(pdf, "test.pdf")
-            assert result["ok"] is False
-            assert result["code"] == ErrorCode.RESUME_UPLOAD_ERROR
+        mock_browser.is_bridge_available.return_value = False
+        uploader = ResumeUploader(browser=mock_browser)
+        result = uploader.upload(pdf, "test.pdf")
+        assert result["ok"] is False
+        assert result["code"] == ErrorCode.RESUME_UPLOAD_ERROR
 
     def test_bridge_upload_falls_to_browser(self, tmp_path):
         pdf = tmp_path / "test.pdf"
@@ -78,9 +72,9 @@ class TestResumeUploader:
             MagicMock(),
         ]
         mock_browser.get_page.return_value = mock_page
+        mock_browser.is_bridge_available.return_value = True
         with patch("boss_career_ops.resume.upload.BridgeClient") as MockBridge:
             mock_bridge = MockBridge.return_value
-            mock_bridge.is_available.return_value = True
             mock_bridge.navigate.return_value = BridgeResult(ok=True, data="navigated")
             mock_bridge.click.return_value = BridgeResult(ok=True, data="clicked")
             mock_bridge.execute_js.return_value = BridgeResult(ok=True, data={"ok": True})
@@ -104,9 +98,9 @@ class TestResumeUploader:
             MagicMock(),
         ]
         mock_browser.get_page.return_value = mock_page
+        mock_browser.is_bridge_available.return_value = True
         with patch("boss_career_ops.resume.upload.BridgeClient") as MockBridge:
             mock_bridge = MockBridge.return_value
-            mock_bridge.is_available.return_value = True
             mock_bridge.navigate.return_value = BridgeResult(ok=False, error="导航失败")
             uploader = ResumeUploader(browser=mock_browser)
             result = uploader.upload(pdf, "test.pdf")
@@ -127,9 +121,9 @@ class TestResumeUploader:
             MagicMock(),
         ]
         mock_browser.get_page.return_value = mock_page
+        mock_browser.is_bridge_available.return_value = True
         with patch("boss_career_ops.resume.upload.BridgeClient") as MockBridge:
             mock_bridge = MockBridge.return_value
-            mock_bridge.is_available.return_value = True
             mock_bridge.navigate.return_value = BridgeResult(ok=True, data="navigated")
             mock_bridge.click.return_value = BridgeResult(ok=True, data="clicked")
             mock_bridge.execute_js.return_value = BridgeResult(

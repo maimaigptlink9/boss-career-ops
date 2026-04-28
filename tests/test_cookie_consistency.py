@@ -77,9 +77,10 @@ class TestRequestCookieConsistency:
         mock_httpx_client.__enter__ = MagicMock(return_value=mock_httpx_client)
         mock_httpx_client.__exit__ = MagicMock(return_value=False)
         mock_httpx_client.get.return_value = mock_resp
+        mock_httpx_client.post.return_value = mock_resp
         mock_client_cls.return_value = mock_httpx_client
 
-        result = client.request("search", params={"query": "Python"})
+        result = client.request("search", json_data={"query": "Python"})
 
         assert result.get("code") == 0
         client._get_cookies.assert_called_once()
@@ -101,9 +102,10 @@ class TestRequestCookieConsistency:
         mock_httpx_client.__enter__ = MagicMock(return_value=mock_httpx_client)
         mock_httpx_client.__exit__ = MagicMock(return_value=False)
         mock_httpx_client.get.return_value = mock_resp
+        mock_httpx_client.post.return_value = mock_resp
         mock_client_cls.return_value = mock_httpx_client
 
-        result = client.request("search", params={"query": "Python"})
+        result = client.request("search", json_data={"query": "Python"})
 
         assert result.get("code") == 0
         client._inject_stoken.assert_called_once()

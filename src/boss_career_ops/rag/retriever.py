@@ -30,13 +30,18 @@ class Retriever:
         return results
 
     def get_skill_market_demand(self, skills: list[str]) -> dict[str, int]:
-        demand = {}
-        for skill in skills:
-            try:
-                results = self._store.search_jd(skill, n=100)
-                demand[skill] = len(results)
-            except Exception as e:
-                logger.warning("技能需求检索失败 %s: %s", skill, e)
-                demand[skill] = 0
+        if not skills:
+            return {}
+        combined_query = " OR ".join(skills)
+        try:
+            results = self._store.search_jd(combined_query, n=500)
+            demand = {}
+            for skill in skills:
+                skill_lower = skill.lower()
+                count = sum(1 for r in results if skill_lower in r.get("content", "").lower())
+                demand[skill] = count
+        except Exception as e:
+            logger.warning("技能需求批量检索失败: %s", e)
+            demand = {skill: 0 for skill in skills}
         logger.info("技能市场需求: %s", demand)
         return demand

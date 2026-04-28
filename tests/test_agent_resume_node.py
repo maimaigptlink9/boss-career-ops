@@ -25,7 +25,7 @@ class TestResumeNodeFallback:
         mock_gen = MagicMock()
         mock_gen.generate.return_value = "# 简历\n基础内容"
         mock_gen_cls.return_value = mock_gen
-        result = mock_gen.generate({"job_id": "job1", "jobName": "Python开发"})
+        result = mock_gen.generate({"job_id": "job1", "job_name": "Python开发"})
         assert "简历" in result
 
 

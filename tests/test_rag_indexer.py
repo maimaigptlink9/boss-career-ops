@@ -35,7 +35,7 @@ class TestIndexFromPipeline:
         mock_store = MagicMock()
         mock_vs_cls.return_value = mock_store
         mock_embedder_cls.return_value = MagicMock()
-        with patch("boss_career_ops.rag.indexer._parse_salary", return_value=(20000, 40000, 12)):
+        with patch("boss_career_ops.rag.indexer.parse_salary", return_value=(20000, 40000, 12)):
             indexer = Indexer()
             count = indexer.index_from_pipeline()
         assert count == 2
@@ -61,7 +61,7 @@ class TestIndexSingleJd:
         mock_store = MagicMock()
         mock_vs_cls.return_value = mock_store
         mock_embedder_cls.return_value = MagicMock()
-        with patch("boss_career_ops.rag.indexer._parse_salary", return_value=(20000, 40000, 12)):
+        with patch("boss_career_ops.rag.indexer.parse_salary", return_value=(20000, 40000, 12)):
             indexer = Indexer()
             indexer.index_single_jd("job1")
         mock_store.add_jd.assert_called_once()

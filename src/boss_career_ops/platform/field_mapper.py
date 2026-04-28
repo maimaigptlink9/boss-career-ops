@@ -22,7 +22,7 @@ class FieldMapper(ABC):
         ...
 
 
-def _parse_salary(salary_desc: str) -> tuple[int, int, int] | None:
+def parse_salary(salary_desc: str) -> tuple[int, int, int] | None:
     salary_desc = salary_desc.strip()
     if salary_desc in ("面议", "薪资面议", "negotiable"):
         return None
@@ -42,22 +42,24 @@ def _parse_salary(salary_desc: str) -> tuple[int, int, int] | None:
     return None
 
 
+def normalize_skills(skills_raw) -> list[str]:
+    if isinstance(skills_raw, str):
+        return [s.strip() for s in skills_raw.split(",") if s.strip()]
+    elif isinstance(skills_raw, list):
+        return [str(s).strip() for s in skills_raw if s]
+    return []
+
+
 class BossFieldMapper(FieldMapper):
 
     def map_job(self, raw_data: dict[str, Any]) -> Job:
         salary_desc = str(raw_data.get("salaryDesc", ""))
-        salary_range = _parse_salary(salary_desc) if salary_desc else None
+        salary_range = parse_salary(salary_desc) if salary_desc else None
         salary_min = salary_range[0] if salary_range else None
         salary_max = salary_range[1] if salary_range else None
         salary_months = salary_range[2] if salary_range else 12
 
-        skills_raw = raw_data.get("skills", "")
-        if isinstance(skills_raw, str):
-            skills = [s.strip() for s in skills_raw.split(",") if s.strip()] if skills_raw else []
-        elif isinstance(skills_raw, list):
-            skills = [str(s) for s in skills_raw]
-        else:
-            skills = []
+        skills = normalize_skills(raw_data.get("skills", ""))
 
         job_labels_raw = raw_data.get("jobLabels", [])
         if isinstance(job_labels_raw, list):
@@ -99,9 +101,9 @@ class BossFieldMapper(FieldMapper):
 
     def map_contact(self, raw_data: dict[str, Any]) -> Contact:
         return Contact(
-            security_id=str(raw_data.get("securityId", "")),
-            name=str(raw_data.get("name", "")),
-            last_message=str(raw_data.get("lastContent", "")),
-            time=str(raw_data.get("time", "")),
+            security_id=str(raw_data.get("securityId", "") or raw_data.get("groupId", "")),
+            name=str(raw_data.get("name", "") or raw_data.get("groupName", "")),
+            last_message=str(raw_data.get("lastContent", "") or raw_data.get("lastMsg", "")),
+            time=str(raw_data.get("time", "") or raw_data.get("lastMsgTime", "")),
             raw_data=dict(raw_data),
         )

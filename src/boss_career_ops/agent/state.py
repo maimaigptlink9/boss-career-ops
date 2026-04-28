@@ -1,3 +1,4 @@
+import operator
 from typing import Annotated, TypedDict
 
 from langgraph.graph.message import add_messages
@@ -13,5 +14,5 @@ class AgentState(TypedDict):
     resume_versions: dict[str, str]
     skill_gaps: dict
     rag_context: str
-    errors: list[str]
+    errors: Annotated[list[str], operator.add]
     next_action: str

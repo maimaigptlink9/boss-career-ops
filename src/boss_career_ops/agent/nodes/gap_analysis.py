@@ -3,7 +3,7 @@ import json
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from boss_career_ops.agent.llm import get_llm, is_llm_available
-from boss_career_ops.agent.prompts import GAP_ANALYSIS_SYSTEM, GAP_ANALYSIS_USER
+from boss_career_ops.agent.prompts import GAP_ANALYSIS_SYSTEM, GAP_ANALYSIS_USER, sanitize_input
 from boss_career_ops.agent.tools import get_profile, list_pipeline_jobs
 from boss_career_ops.display.logger import get_logger
 
@@ -45,11 +45,11 @@ async def run(state: dict) -> dict:
 
     if not skills:
         errors.append("个人档案中无技能信息")
-        return {"skill_gaps": {}, "errors": errors}
+        return {"skill_gaps": {}, "next_action": "", "errors": errors}
 
     if not jds:
         errors.append("Pipeline 中无职位数据")
-        return {"skill_gaps": {}, "errors": errors}
+        return {"skill_gaps": {}, "next_action": "", "errors": errors}
 
     skills_text = json.dumps(skills, ensure_ascii=False)
     jds_text = "\n---\n".join(jds[:20])
@@ -60,7 +60,10 @@ async def run(state: dict) -> dict:
         try:
             system_msg = SystemMessage(content=GAP_ANALYSIS_SYSTEM)
             user_msg = HumanMessage(
-                content=GAP_ANALYSIS_USER.format(skills=skills_text, jds=jds_text)
+                content=GAP_ANALYSIS_USER.safe_substitute(
+                    skills=sanitize_input(skills_text),
+                    jds=sanitize_input(jds_text),
+                )
             )
             response = await llm.ainvoke([system_msg, user_msg])
             content = response.content
@@ -89,6 +92,7 @@ async def run(state: dict) -> dict:
 
             return {
                 "skill_gaps": parsed,
+                "next_action": "",
                 "messages": [{"role": "system", "content": f"技能差距分析完成: {overall_assessment}"}],
             }
 
@@ -112,5 +116,6 @@ async def run(state: dict) -> dict:
 
     return {
         "skill_gaps": result,
+        "next_action": "",
         "messages": [{"role": "system", "content": f"技能差距分析完成(规则): {result.get('overall_assessment', '')}"}],
     }

@@ -1,6 +1,8 @@
 import json
 from unittest.mock import patch, MagicMock
 
+import pytest
+
 from boss_career_ops.agent.tools import (
     get_job_detail,
     get_chat_messages,
@@ -17,9 +19,19 @@ from boss_career_ops.agent.tools import (
     apply_job,
     analyze_skill_gap,
     prepare_interview,
+    evaluate_job,
+    generate_resume,
 )
 from boss_career_ops.config.singleton import SingletonMeta
 from boss_career_ops.pipeline.manager import PipelineManager
+import boss_career_ops.agent.tools as _tools_mod
+
+
+@pytest.fixture(autouse=True)
+def _reset_pm_cache():
+    _tools_mod._pm = None
+    yield
+    _tools_mod._pm = None
 
 
 class TestGetJobDetail:
@@ -256,15 +268,15 @@ class TestGreetRecruiter:
         mock_adapter.greet.return_value = mock_result
         mock_adapter_fn.return_value = mock_adapter
         result = greet_recruiter("sec1", "job1")
-        assert result["ok"] is True
-        assert result["message"] == "打招呼成功"
+        assert result.ok is True
+        assert result.data["message"] == "打招呼成功"
 
     @patch("boss_career_ops.agent.tools.get_active_adapter")
     def test_greet_error(self, mock_adapter_fn):
         mock_adapter_fn.side_effect = Exception("连接失败")
         result = greet_recruiter("sec1", "job1")
-        assert result["ok"] is False
-        assert "连接失败" in result["message"]
+        assert result.ok is False
+        assert "连接失败" in result.error
 
 
 class TestApplyJob:
@@ -277,14 +289,14 @@ class TestApplyJob:
         mock_adapter.apply.return_value = mock_result
         mock_adapter_fn.return_value = mock_adapter
         result = apply_job("sec1", "job1")
-        assert result["ok"] is True
-        assert result["message"] == "投递成功"
+        assert result.ok is True
+        assert result.data["message"] == "投递成功"
 
     @patch("boss_career_ops.agent.tools.get_active_adapter")
     def test_apply_error(self, mock_adapter_fn):
         mock_adapter_fn.side_effect = Exception("投递失败")
         result = apply_job("sec1", "job1")
-        assert result["ok"] is False
+        assert result.ok is False
 
 
 class TestAnalyzeSkillGap:
@@ -320,9 +332,10 @@ class TestPrepareInterview:
         mock_pm.get_ai_results.return_value = []
         mock_pm_cls.return_value = mock_pm
         result = prepare_interview("job1")
-        assert result["job_id"] == "job1"
-        assert result["job_name"] == "Python开发"
-        assert result["analysis_available"] is True
+        assert result.ok is True
+        assert result.data["job_id"] == "job1"
+        assert result.data["job_name"] == "Python开发"
+        assert result.data["analysis_available"] is True
 
     @patch("boss_career_ops.agent.tools.PipelineManager")
     def test_prepare_interview_nonexistent_job(self, mock_pm_cls):
@@ -332,4 +345,111 @@ class TestPrepareInterview:
         mock_pm.get_job.return_value = None
         mock_pm_cls.return_value = mock_pm
         result = prepare_interview("missing")
-        assert "error" in result
+        assert result.ok is False
+
+
+class TestEvaluateJobHighLevel:
+    @patch("boss_career_ops.agent.tools.write_evaluation")
+    @patch("boss_career_ops.evaluator.engine.EvaluationEngine")
+    @patch("boss_career_ops.agent.tools.PipelineManager")
+    def test_evaluate_job_persists_result(self, mock_pm_cls, mock_engine_cls, mock_write_eval):
+        mock_pm = MagicMock()
+        mock_pm.__enter__ = MagicMock(return_value=mock_pm)
+        mock_pm.__exit__ = MagicMock(return_value=False)
+        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发"}
+        mock_pm.get_ai_results.return_value = []
+        mock_pm_cls.return_value = mock_pm
+
+        mock_engine = MagicMock()
+        mock_engine.evaluate.return_value = {
+            "total_score": 4.2,
+            "grade": "B",
+            "recommendation": "匹配度较高",
+            "scores": {"匹配度": 4.0, "薪资": 5.0},
+            "job_name": "Python开发",
+            "company_name": "公司A",
+        }
+        mock_engine_cls.return_value = mock_engine
+
+        result = evaluate_job("job1")
+
+        assert result is not None
+        assert result["total_score"] == 4.2
+        assert result["grade"] == "B"
+        mock_engine.evaluate.assert_called_once()
+        mock_write_eval.assert_called_once_with(
+            job_id="job1",
+            score=4.2,
+            grade="B",
+            analysis="匹配度较高",
+            scores_detail={"匹配度": 4.0, "薪资": 5.0},
+        )
+
+    @patch("boss_career_ops.agent.tools.PipelineManager")
+    def test_evaluate_job_not_found(self, mock_pm_cls):
+        mock_pm = MagicMock()
+        mock_pm.__enter__ = MagicMock(return_value=mock_pm)
+        mock_pm.__exit__ = MagicMock(return_value=False)
+        mock_pm.get_job.return_value = None
+        mock_pm_cls.return_value = mock_pm
+
+        result = evaluate_job("missing")
+        assert result is None
+
+
+class TestGenerateResumeHighLevel:
+    @patch("boss_career_ops.agent.tools.write_resume")
+    @patch("boss_career_ops.resume.generator.ResumeGenerator")
+    @patch("boss_career_ops.agent.tools.PipelineManager")
+    def test_generate_resume_persists_result(self, mock_pm_cls, mock_gen_cls, mock_write_resume):
+        mock_pm = MagicMock()
+        mock_pm.__enter__ = MagicMock(return_value=mock_pm)
+        mock_pm.__exit__ = MagicMock(return_value=False)
+        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发"}
+        mock_pm.get_ai_results.return_value = []
+        mock_pm_cls.return_value = mock_pm
+
+        mock_gen = MagicMock()
+        mock_gen.generate.return_value = "# 简历\n针对职位定制"
+        mock_gen_cls.return_value = mock_gen
+
+        result = generate_resume("job1")
+
+        assert result is not None
+        assert "简历" in result
+        mock_gen.generate.assert_called_once()
+        mock_write_resume.assert_called_once_with(
+            job_id="job1",
+            markdown_content="# 简历\n针对职位定制",
+        )
+
+    @patch("boss_career_ops.agent.tools.PipelineManager")
+    def test_generate_resume_not_found(self, mock_pm_cls):
+        mock_pm = MagicMock()
+        mock_pm.__enter__ = MagicMock(return_value=mock_pm)
+        mock_pm.__exit__ = MagicMock(return_value=False)
+        mock_pm.get_job.return_value = None
+        mock_pm_cls.return_value = mock_pm
+
+        result = generate_resume("missing")
+        assert result is None
+
+    @patch("boss_career_ops.agent.tools.write_resume")
+    @patch("boss_career_ops.resume.generator.ResumeGenerator")
+    @patch("boss_career_ops.agent.tools.PipelineManager")
+    def test_generate_resume_empty_skips_persist(self, mock_pm_cls, mock_gen_cls, mock_write_resume):
+        mock_pm = MagicMock()
+        mock_pm.__enter__ = MagicMock(return_value=mock_pm)
+        mock_pm.__exit__ = MagicMock(return_value=False)
+        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发"}
+        mock_pm.get_ai_results.return_value = []
+        mock_pm_cls.return_value = mock_pm
+
+        mock_gen = MagicMock()
+        mock_gen.generate.return_value = ""
+        mock_gen_cls.return_value = mock_gen
+
+        result = generate_resume("job1")
+
+        assert result == ""
+        mock_write_resume.assert_not_called()

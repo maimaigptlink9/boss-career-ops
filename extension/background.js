@@ -1,15 +1,16 @@
 const BRIDGE_URL = "ws://127.0.0.1:18765/ws";
+const RECONNECT_ALARM = "bco-reconnect";
+const RECONNECT_DELAY_MINUTES = 0.08;
 let ws = null;
-let reconnectTimer = null;
 
 function connect() {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
   ws = new WebSocket(BRIDGE_URL);
   ws.onopen = () => {
     console.log("[Boss-Career-Ops] Bridge connected");
-    if (reconnectTimer) {
-      clearInterval(reconnectTimer);
-      reconnectTimer = null;
-    }
+    chrome.alarms.clear(RECONNECT_ALARM);
   };
   ws.onmessage = async (event) => {
     const data = JSON.parse(event.data);
@@ -17,13 +18,23 @@ function connect() {
     ws.send(JSON.stringify(result));
   };
   ws.onclose = () => {
-    console.log("[Boss-Career-Ops] Bridge disconnected, reconnecting...");
-    reconnectTimer = setTimeout(connect, 5000);
+    console.log("[Boss-Career-Ops] Bridge disconnected, scheduling reconnect...");
+    scheduleReconnect();
   };
   ws.onerror = (err) => {
     console.error("[Boss-Career-Ops] Bridge error:", err);
   };
 }
+
+function scheduleReconnect() {
+  chrome.alarms.create(RECONNECT_ALARM, { delayInMinutes: RECONNECT_DELAY_MINUTES });
+}
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === RECONNECT_ALARM) {
+    connect();
+  }
+});
 
 async function handleCommand(data) {
   const { type, params, id } = data;
@@ -112,6 +123,10 @@ chrome.webNavigation.onCompleted.addListener((details) => {
       }));
     }
   }
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+  connect();
 });
 
 connect();

@@ -1,8 +1,9 @@
 import json
 import sqlite3
 import time
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Generator, Union
 
 from boss_career_ops.config.settings import BCO_HOME
 from boss_career_ops.config.singleton import SingletonMeta
@@ -14,6 +15,16 @@ logger = get_logger(__name__)
 
 DB_PATH = BCO_HOME / "pipeline.db"
 
+_PIPELINE_COLS = [
+    "job_id", "job_name", "company_name", "salary_desc",
+    "stage", "score", "grade", "security_id",
+    "data", "created_at", "updated_at",
+]
+
+_AI_RESULT_COLS = [
+    "id", "job_id", "task_type", "result", "source", "created_at",
+]
+
 
 class PipelineManager(metaclass=SingletonMeta):
 
@@ -22,6 +33,7 @@ class PipelineManager(metaclass=SingletonMeta):
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn: sqlite3.Connection | None = None
         self._ref_count = 0
+        self._batch_mode = False
 
     def __enter__(self):
         self.open()
@@ -65,6 +77,10 @@ class PipelineManager(metaclass=SingletonMeta):
             )
         """)
         self._conn.commit()
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_pipeline_stage ON pipeline(stage)")
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_pipeline_updated ON pipeline(updated_at)")
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_ai_results_job_task ON ai_results(job_id, task_type)")
+        self._conn.commit()
 
     def close(self):
         self._ref_count -= 1
@@ -72,6 +88,15 @@ class PipelineManager(metaclass=SingletonMeta):
             return
         self._conn.close()
         self._conn = None
+
+    @contextmanager
+    def batch_commit(self) -> Generator[None, None, None]:
+        self._batch_mode = True
+        try:
+            yield
+            self._conn.commit()
+        finally:
+            self._batch_mode = False
 
     def upsert_job(self, job_or_id: Union[Job, str], job_name: str = "", company_name: str = "", salary_desc: str = "", security_id: str = "", data: dict | None = None):
         if isinstance(job_or_id, Job):
@@ -96,7 +121,8 @@ class PipelineManager(metaclass=SingletonMeta):
                    updated_at = excluded.updated_at""",
             (job_id, job_name, company_name, salary_desc, Stage.DISCOVERED.value, security_id, json.dumps(data or {}, ensure_ascii=False), now, now),
         )
-        self._conn.commit()
+        if not self._batch_mode:
+            self._conn.commit()
 
     def batch_add_jobs(self, jobs: list[Union[Job, dict]]):
         if not self._conn:
@@ -120,7 +146,8 @@ class PipelineManager(metaclass=SingletonMeta):
             "INSERT OR IGNORE INTO pipeline (job_id, job_name, company_name, salary_desc, stage, security_id, data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             rows,
         )
-        self._conn.commit()
+        if not self._batch_mode:
+            self._conn.commit()
 
     def update_job_data(self, job_id: str, data_updates: dict):
         if not self._conn:
@@ -135,7 +162,8 @@ class PipelineManager(metaclass=SingletonMeta):
             "UPDATE pipeline SET data = ?, updated_at = ? WHERE job_id = ?",
             (json.dumps(current_data, ensure_ascii=False), time.time(), job_id),
         )
-        self._conn.commit()
+        if not self._batch_mode:
+            self._conn.commit()
 
     def update_stage(self, job_id: str, stage: Stage):
         if not self._conn:
@@ -144,7 +172,8 @@ class PipelineManager(metaclass=SingletonMeta):
             "UPDATE pipeline SET stage = ?, updated_at = ? WHERE job_id = ?",
             (stage.value, time.time(), job_id),
         )
-        self._conn.commit()
+        if not self._batch_mode:
+            self._conn.commit()
 
     def update_score(self, job_id: str, score: float, grade: str):
         if not self._conn:
@@ -153,7 +182,8 @@ class PipelineManager(metaclass=SingletonMeta):
             "UPDATE pipeline SET score = ?, grade = ?, updated_at = ? WHERE job_id = ?",
             (score, grade, time.time(), job_id),
         )
-        self._conn.commit()
+        if not self._batch_mode:
+            self._conn.commit()
 
     def get_job(self, job_id: str) -> dict | None:
         if not self._conn:
@@ -162,8 +192,7 @@ class PipelineManager(metaclass=SingletonMeta):
         row = cursor.fetchone()
         if not row:
             return None
-        cols = ["job_id", "job_name", "company_name", "salary_desc", "stage", "score", "grade", "security_id", "data", "created_at", "updated_at"]
-        return dict(zip(cols, row))
+        return dict(zip(_PIPELINE_COLS, row))
 
     def list_jobs(self, stage: str | None = None) -> list[dict]:
         if not self._conn:
@@ -172,16 +201,14 @@ class PipelineManager(metaclass=SingletonMeta):
             cursor = self._conn.execute("SELECT * FROM pipeline WHERE stage = ? ORDER BY updated_at DESC", (stage,))
         else:
             cursor = self._conn.execute("SELECT * FROM pipeline ORDER BY updated_at DESC")
-        cols = ["job_id", "job_name", "company_name", "salary_desc", "stage", "score", "grade", "security_id", "data", "created_at", "updated_at"]
-        return [dict(zip(cols, row)) for row in cursor.fetchall()]
+        return [dict(zip(_PIPELINE_COLS, row)) for row in cursor.fetchall()]
 
     def get_stale_jobs(self, days: int = 3) -> list[dict]:
         if not self._conn:
             raise RuntimeError("PipelineManager 未打开")
         cutoff = time.time() - days * 86400
         cursor = self._conn.execute("SELECT * FROM pipeline WHERE updated_at < ? AND stage != 'offer' ORDER BY updated_at ASC", (cutoff,))
-        cols = ["job_id", "job_name", "company_name", "salary_desc", "stage", "score", "grade", "security_id", "data", "created_at", "updated_at"]
-        return [dict(zip(cols, row)) for row in cursor.fetchall()]
+        return [dict(zip(_PIPELINE_COLS, row)) for row in cursor.fetchall()]
 
     def get_daily_summary(self) -> dict:
         if not self._conn:
@@ -214,7 +241,8 @@ class PipelineManager(metaclass=SingletonMeta):
                    created_at = excluded.created_at""",
             (job_id, task_type, result, source, now),
         )
-        self._conn.commit()
+        if not self._batch_mode:
+            self._conn.commit()
 
     def get_ai_result(self, job_id: str, task_type: str) -> dict | None:
         if not self._conn:
@@ -226,8 +254,7 @@ class PipelineManager(metaclass=SingletonMeta):
         row = cursor.fetchone()
         if not row:
             return None
-        cols = ["id", "job_id", "task_type", "result", "source", "created_at"]
-        return dict(zip(cols, row))
+        return dict(zip(_AI_RESULT_COLS, row))
 
     def get_ai_results(self, job_id: str) -> list[dict]:
         if not self._conn:
@@ -236,5 +263,4 @@ class PipelineManager(metaclass=SingletonMeta):
             "SELECT id, job_id, task_type, result, source, created_at FROM ai_results WHERE job_id = ? ORDER BY created_at DESC",
             (job_id,),
         )
-        cols = ["id", "job_id", "task_type", "result", "source", "created_at"]
-        return [dict(zip(cols, row)) for row in cursor.fetchall()]
+        return [dict(zip(_AI_RESULT_COLS, row)) for row in cursor.fetchall()]

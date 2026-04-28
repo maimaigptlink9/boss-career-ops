@@ -113,12 +113,13 @@ class TestBossClientBrowserFallback:
         mock_httpx_client.__enter__ = MagicMock(return_value=mock_httpx_client)
         mock_httpx_client.__exit__ = MagicMock(return_value=False)
         mock_httpx_client.get.return_value = mock_resp
+        mock_httpx_client.post.return_value = mock_resp
 
         return client, mock_httpx_client
 
     @patch("boss_career_ops.boss.api.client.httpx.Client")
-    def test_risk_blocked_fallback_to_browser_for_job_detail(self, mock_client_cls):
-        """风控拦截 job_detail 端点时尝试浏览器降级"""
+    def test_risk_blocked_fallback_to_browser_for_user_info(self, mock_client_cls):
+        """风控拦截 user_info 端点时尝试浏览器降级"""
         risk_response = {
             "code": 99,
             "message": "环境存在异常，请稍后再试",
@@ -127,12 +128,12 @@ class TestBossClientBrowserFallback:
         client, mock_httpx_client = self._make_client_with_mocked_httpx(200, risk_response)
         mock_client_cls.return_value = mock_httpx_client
 
-        browser_result = {"code": 0, "zpData": {"jobName": "降级成功"}}
+        browser_result = {"code": 0, "zpData": {"userName": "降级成功"}}
         client._request_via_browser = MagicMock(return_value=browser_result)
 
-        result = client.request("job_detail", params={"securityId": "sec123"})
+        result = client.request("user_info")
 
-        client._request_via_browser.assert_called_once_with("job_detail", {"securityId": "sec123"})
+        client._request_via_browser.assert_called_once_with("user_info", {})
         assert result == browser_result
 
     @patch("boss_career_ops.boss.api.client.httpx.Client")
@@ -148,7 +149,7 @@ class TestBossClientBrowserFallback:
 
         client._request_via_browser = MagicMock(return_value=None)
 
-        result = client.request("search", params={"query": "Python"})
+        result = client.request("greet", json_data={"securityId": "test", "jobId": "test"})
 
         client._request_via_browser.assert_not_called()
         assert result.get("_risk_blocked") is True
@@ -166,7 +167,7 @@ class TestBossClientBrowserFallback:
 
         client._request_via_browser = MagicMock(return_value=None)
 
-        result = client.request("job_detail", params={"securityId": "sec123"})
+        result = client.request("user_info")
 
         client._request_via_browser.assert_called_once()
         assert result.get("_risk_blocked") is True
@@ -226,6 +227,7 @@ class TestRiskControlKeywords:
         resp_data = {"code": 1, "message": "环境存在异常，请稍后再试"}
         assert client._is_risk_blocked(resp_data) is True
 
-    def test_browser_fallback_endpoints_include_job_detail(self):
-        """BROWSER_FALLBACK_ENDPOINTS 应包含 job_detail"""
-        assert "job_detail" in BROWSER_FALLBACK_ENDPOINTS
+    def test_browser_fallback_endpoints_include_search_and_user_info(self):
+        """BROWSER_FALLBACK_ENDPOINTS 应包含 search 和 user_info"""
+        assert "search" in BROWSER_FALLBACK_ENDPOINTS
+        assert "user_info" in BROWSER_FALLBACK_ENDPOINTS

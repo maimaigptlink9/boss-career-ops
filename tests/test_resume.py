@@ -19,13 +19,13 @@ class TestResumeGenerator:
     def test_generate_from_profile(self):
         profile = Profile(name="张三", title="工程师", skills=["Go", "Docker"], education="本科")
         gen = self._make_generator(profile=profile)
-        result = gen.generate({"jobName": "Golang"})
+        result = gen.generate({"job_name": "Golang"})
         assert result == ""
 
     def test_generate_from_cv(self):
         cv = "# 简历\n\n## 技能\n- Python\n- Go"
         gen = self._make_generator(cv_content=cv)
-        result = gen.generate({"jobName": "Golang", "brandName": "公司", "skills": "Go,Kubernetes"})
+        result = gen.generate({"job_name": "Golang", "company_name": "公司", "skills": "Go,Kubernetes"})
         assert "定制" in result
 
     def test_extract_skills_from_jd(self):
@@ -39,6 +39,18 @@ class TestResumeGenerator:
         gen = self._make_generator()
         skills = gen._extract_skills_from_jd("需要一些其他技能")
         assert skills == []
+
+    def test_generate_uses_snake_case_fields(self):
+        cv = "# 简历\n\n## 技能\n- Python"
+        gen = self._make_generator(cv_content=cv)
+        result = gen.generate({"job_name": "Golang", "company_name": "测试公司", "skills": "Go", "description": "后端开发"})
+        assert "Golang" in result
+        assert "测试公司" in result
+
+    def test_extract_jd_text_snake_case(self):
+        gen = self._make_generator()
+        jd_text = gen._extract_jd_text({"job_name": "Python开发", "skills": "Python,Go", "description": "后端开发", "job_labels": ["远程"]})
+        assert "Python开发" in jd_text
 
 
 class TestKeywordInjector:

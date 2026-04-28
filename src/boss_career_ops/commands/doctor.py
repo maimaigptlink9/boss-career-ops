@@ -12,7 +12,6 @@ REQUIRED_PACKAGES = [
     "click",
     "httpx",
     "patchright",
-    "playwright",
     "textual",
     "rich",
     "yaml",

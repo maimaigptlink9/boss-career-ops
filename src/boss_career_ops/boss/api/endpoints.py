@@ -4,6 +4,8 @@ from typing import Any
 
 import yaml
 
+from boss_career_ops.config.singleton import SingletonMeta
+
 
 YAML_PATH = Path(__file__).parent / "boss.yaml"
 
@@ -16,19 +18,8 @@ class Endpoint:
     description: str
 
 
-class Endpoints:
-    _instance = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
-
+class Endpoints(metaclass=SingletonMeta):
     def __init__(self):
-        if self._initialized:
-            return
-        self._initialized = True
         self._endpoints: dict[str, Endpoint] = {}
         self._base_url = ""
         self._api_base = ""

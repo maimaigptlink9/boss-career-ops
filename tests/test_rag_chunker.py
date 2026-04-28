@@ -1,4 +1,4 @@
-from boss_career_ops.rag.chunker import chunk_jd, chunk_resume, chunk_interview
+from boss_career_ops.rag.chunker import chunk_jd, chunk_resume, chunk_interview, MAX_JD_CHUNK_LENGTH
 from boss_career_ops.rag.schemas import JDDocument, ResumeTemplate, InterviewExperience
 
 
@@ -31,6 +31,62 @@ class TestChunkJd:
         assert meta["industry"] == "互联网"
         assert meta["score"] == 4.2
         assert meta["grade"] == "B"
+
+    def test_short_text_kept_intact(self):
+        doc = JDDocument(
+            doc_id="jd_short",
+            content="简短JD",
+            job_name="开发",
+            company_name="公司",
+            city="北京",
+            salary_min=10000,
+            salary_max=20000,
+            skills=["Python"],
+            industry="互联网",
+        )
+        chunks = chunk_jd(doc)
+        assert len(chunks) == 1
+        assert chunks[0]["content"] == "简短JD"
+
+    def test_long_text_splits_into_chunks(self):
+        para = "A" * 3000
+        long_content = "\n\n".join([para, para, para])
+        doc = JDDocument(
+            doc_id="jd_long",
+            content=long_content,
+            job_name="开发",
+            company_name="公司",
+            city="北京",
+            salary_min=10000,
+            salary_max=20000,
+            skills=["Python"],
+            industry="互联网",
+        )
+        chunks = chunk_jd(doc)
+        assert len(chunks) > 1
+        for chunk in chunks:
+            assert len(chunk["content"]) <= MAX_JD_CHUNK_LENGTH
+        for i, chunk in enumerate(chunks):
+            assert chunk["metadata"]["chunk_index"] == i
+            assert chunk["metadata"]["doc_id"] == "jd_long"
+
+    def test_very_long_single_paragraph_splits(self):
+        single_para = "X" * (MAX_JD_CHUNK_LENGTH + 1000)
+        doc = JDDocument(
+            doc_id="jd_huge",
+            content=single_para,
+            job_name="开发",
+            company_name="公司",
+            city="北京",
+            salary_min=10000,
+            salary_max=20000,
+            skills=["Python"],
+            industry="互联网",
+        )
+        chunks = chunk_jd(doc)
+        assert len(chunks) == 2
+        assert len(chunks[0]["content"]) == MAX_JD_CHUNK_LENGTH
+        assert len(chunks[1]["content"]) == 1000
 
 
 class TestChunkResume:

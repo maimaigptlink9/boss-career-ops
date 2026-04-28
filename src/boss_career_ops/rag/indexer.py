@@ -2,7 +2,7 @@ import json
 
 from boss_career_ops.display.logger import get_logger
 from boss_career_ops.pipeline.manager import PipelineManager
-from boss_career_ops.platform.field_mapper import _parse_salary
+from boss_career_ops.platform.field_mapper import normalize_skills, parse_salary
 from boss_career_ops.rag.embedder import Embedder
 from boss_career_ops.rag.schemas import InterviewExperience, JDDocument, ResumeTemplate
 from boss_career_ops.rag.vector_store import VectorStore
@@ -70,7 +70,7 @@ class Indexer:
     def _job_to_jd_document(self, job: dict) -> JDDocument | None:
         data = json.loads(job.get("data", "{}"))
         salary_desc = job.get("salary_desc", "")
-        salary_range = _parse_salary(salary_desc) if salary_desc else None
+        salary_range = parse_salary(salary_desc) if salary_desc else None
         salary_min = salary_range[0] if salary_range else 0
         salary_max = salary_range[1] if salary_range else 0
 

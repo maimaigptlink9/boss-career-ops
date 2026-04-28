@@ -18,7 +18,7 @@ def _upload_resume_before_apply(job_id: str) -> dict:
     job = adapter.get_job_detail(job_id)
     if job is None:
         return {"ok": False, "message": "获取职位详情失败"}
-    job_dict = job.raw_data or job.to_dict()
+    job_dict = job.to_dict()
     generator = ResumeGenerator()
     resume_md = generator.generate(job_dict)
     injector = KeywordInjector()

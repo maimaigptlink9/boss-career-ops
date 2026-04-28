@@ -28,8 +28,8 @@ class TestApplyNodeWithoutLlm:
         mock_adapter.greet.return_value = mock_result
         mock_adapter_fn.return_value = mock_adapter
         result = greet_recruiter("sec1", "job1")
-        assert result["ok"] is True
-        assert result["message"] == "打招呼成功"
+        assert result.ok is True
+        assert result.data["message"] == "打招呼成功"
 
     @patch("boss_career_ops.agent.tools.get_active_adapter")
     def test_apply_job_directly(self, mock_adapter_fn):
@@ -40,12 +40,12 @@ class TestApplyNodeWithoutLlm:
         mock_adapter.apply.return_value = mock_result
         mock_adapter_fn.return_value = mock_adapter
         result = apply_job("sec1", "job1")
-        assert result["ok"] is True
-        assert result["message"] == "投递成功"
+        assert result.ok is True
+        assert result.data["message"] == "投递成功"
 
     @patch("boss_career_ops.agent.tools.get_active_adapter")
     def test_greet_recruiter_error(self, mock_adapter_fn):
         mock_adapter_fn.side_effect = Exception("连接失败")
         result = greet_recruiter("sec1", "job1")
-        assert result["ok"] is False
-        assert "连接失败" in result["message"]
+        assert result.ok is False
+        assert "连接失败" in result.error

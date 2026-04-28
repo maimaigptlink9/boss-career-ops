@@ -17,8 +17,7 @@ RATE_LIMITED_CODES = {429, 10003}
 RATE_LIMITED_KEYWORDS = {"limit", "频繁", "too many", "rate limit"}
 RISK_CONTROL_KEYWORDS = {"环境存在异常", "访问行为异常", "操作异常", "风控", "risk"}
 
-# 需要降级到浏览器通道的端点（高风险操作）
-BROWSER_FALLBACK_ENDPOINTS = {"job_detail", "recommend", "recommend_v2", "user_info"}
+BROWSER_FALLBACK_ENDPOINTS = {"search", "recommend", "recommend_v2", "user_info"}
 
 DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -46,6 +45,17 @@ class BossClient(metaclass=SingletonMeta):
         self._burst_count = 0
         self._burst_window_start = 0.0
         self._rate_limit_count = 0
+        self._http_client: httpx.Client | None = None
+
+    def _get_http_client(self) -> httpx.Client:
+        if self._http_client is None or self._http_client.is_closed:
+            self._http_client = httpx.Client(follow_redirects=True, timeout=30.0)
+        return self._http_client
+
+    def close(self) -> None:
+        if self._http_client is not None and not self._http_client.is_closed:
+            self._http_client.close()
+            self._http_client = None
 
     def _get_cookies(self) -> dict[str, str]:
         try:
@@ -102,7 +112,9 @@ class BossClient(metaclass=SingletonMeta):
             headers["Referer"] = "https://www.zhipin.com/web/geek/recommend"
         elif endpoint_name in ("job_detail",):
             headers["Referer"] = "https://www.zhipin.com/web/geek/job"
-        elif endpoint_name in ("chat_list", "chat_messages"):
+        elif endpoint_name in ("chat_list",):
+            headers["Referer"] = "https://www.zhipin.com/web/geek/chat"
+        elif endpoint_name in ("chat_messages",):
             headers["Referer"] = "https://www.zhipin.com/web/geek/chat"
         bst = cookies.get("bst", "")
         if bst:
@@ -138,84 +150,234 @@ class BossClient(metaclass=SingletonMeta):
         jitter = random.uniform(0, delay * 0.3)
         return delay + jitter
 
-    def _request_via_browser(self, endpoint_name: str, params: dict | None = None) -> dict | None:
-        if endpoint_name not in BROWSER_FALLBACK_ENDPOINTS:
+    def _try_http_request(
+        self,
+        client: httpx.Client,
+        method: str,
+        url: str,
+        params: dict | None,
+        json_data: dict | None,
+        headers: dict[str, str],
+        cookies: dict[str, str],
+    ) -> httpx.Response:
+        if method == "GET":
+            return client.get(url, params=params, headers=headers, cookies=cookies)
+        return client.post(url, params=params, json=json_data, headers=headers, cookies=cookies)
+
+    def _handle_rate_limit(
+        self,
+        attempt: int,
+        max_attempts: int,
+        status_code: int,
+        resp_data: dict,
+    ) -> dict | None:
+        if not self._is_rate_limited(status_code, resp_data):
             return None
+        if attempt >= max_attempts - 1:
+            return None
+        self._rate_limit_count += 1
+        cooldown = min(60, 10 * (2 ** (self._rate_limit_count - 1)))
+        logger.warning("限流冷却: %d 秒 (第 %d 次限流)", cooldown, self._rate_limit_count)
+        backoff = self._exponential_backoff_delay(attempt)
+        if status_code != 0:
+            logger.warning(
+                "限流检测 (尝试 %d/%d): HTTP %d, 退避 %.1f 秒",
+                attempt + 1, max_attempts, status_code, backoff,
+            )
+        else:
+            logger.warning(
+                "API 限流 (尝试 %d/%d): code=%s, 退避 %.1f 秒",
+                attempt + 1, max_attempts, resp_data.get("code"), backoff,
+            )
+        return {"cooldown": cooldown, "backoff": backoff}
+
+    def _handle_risk_block(
+        self,
+        result: dict,
+        endpoint_name: str,
+        params: dict | None,
+    ) -> dict:
+        if not self._is_risk_blocked(result):
+            return result
+        logger.warning("风控拦截: %s", result.get("message", ""))
+        result["_risk_blocked"] = True
+        if endpoint_name not in BROWSER_FALLBACK_ENDPOINTS:
+            return result
+        logger.info("风控拦截，尝试浏览器通道降级: %s", endpoint_name)
+        browser_result = self._request_via_browser(endpoint_name, params)
+        if browser_result and browser_result.get("code") == 0:
+            return browser_result
+        logger.warning("浏览器通道降级也失败: %s", endpoint_name)
+        return result
+
+    def _browser_get(
+        self,
+        url: str,
+        params: dict | None,
+        headers: dict[str, str],
+        cookies: dict[str, str],
+    ) -> dict | None:
         try:
             from boss_career_ops.boss.browser_client import BrowserClient
 
             browser = BrowserClient()
-            tokens = self._get_cookies()
-            if not tokens:
-                logger.warning("无 Cookie，浏览器通道降级无法注入 Cookie")
-                return None
-
-            cookies_for_browser = []
-            for name, value in tokens.items():
-                if isinstance(value, str) and value:
-                    cookies_for_browser.append({
-                        "name": name,
-                        "value": value,
-                        "domain": ".zhipin.com",
-                        "path": "/",
-                    })
+            cookies_for_browser = [
+                {"name": name, "value": value, "domain": ".zhipin.com", "path": "/"}
+                for name, value in cookies.items()
+                if isinstance(value, str) and value
+            ]
 
             page_obj = browser.get_page()
             page_obj.goto("https://www.zhipin.com", wait_until="domcontentloaded")
             page_obj.wait_for_timeout(1000)
             browser.add_cookies(cookies_for_browser)
-
-            page_obj.goto("https://www.zhipin.com/web/geek/job?query=", wait_until="domcontentloaded", timeout=15000)
+            page_obj.goto(
+                "https://www.zhipin.com/web/geek/job?query=",
+                wait_until="domcontentloaded",
+                timeout=15000,
+            )
             page_obj.wait_for_timeout(3000)
 
-            ep = self._endpoints.get(endpoint_name)
-            api_path = ep.path if ep else ""
+            query_parts = []
+            if params:
+                for k, v in params.items():
+                    query_parts.append(f"{k}={v}")
+            query_str = "&".join(query_parts)
+            fetch_url = f"{url}?{query_str}" if query_str else url
 
-            if endpoint_name in ("job_detail", "recommend", "recommend_v2", "user_info"):
-                query_parts = []
-                if params:
-                    for k, v in params.items():
-                        query_parts.append(f"{k}={v}")
-                query_str = "&".join(query_parts)
-                fetch_url = f"{api_path}?{query_str}" if query_str else api_path
-
-                js_code = f"""
-                async () => {{
-                    try {{
-                        const resp = await fetch("{fetch_url}", {{
-                            method: "GET",
-                            credentials: "include",
-                            headers: {{
-                                "Accept": "application/json",
-                            }},
-                        }});
-                        const data = await resp.json();
-                        return data;
-                    }} catch (e) {{
-                        return {{_fetch_error: e.message}};
-                    }}
+            js_code = f"""
+            async () => {{
+                try {{
+                    const resp = await fetch("{fetch_url}", {{
+                        method: "GET",
+                        credentials: "include",
+                        headers: {{
+                            "Accept": "application/json",
+                        }},
+                    }});
+                    const data = await resp.json();
+                    return data;
+                }} catch (e) {{
+                    return {{_fetch_error: e.message}};
                 }}
-                """
-                result = page_obj.evaluate(js_code)
-                page_obj.close()
-                browser.close()
-
-                if result and isinstance(result, dict):
-                    if result.get("code") == 0:
-                        logger.info("浏览器通道降级成功 (fetch): %s", endpoint_name)
-                        return result
-                    if "_fetch_error" in result:
-                        logger.warning("浏览器 fetch 请求失败: %s", result["_fetch_error"])
-                    else:
-                        logger.warning("浏览器通道降级失败 (fetch): %s, code=%s", endpoint_name, result.get("code"))
-                return None
-
+            }}
+            """
+            result = page_obj.evaluate(js_code)
             page_obj.close()
             browser.close()
+
+            if result and isinstance(result, dict):
+                if result.get("code") == 0:
+                    logger.info("浏览器通道降级成功 (GET fetch): %s", url)
+                    return result
+                if "_fetch_error" in result:
+                    logger.warning("浏览器 fetch 请求失败: %s", result["_fetch_error"])
+                else:
+                    logger.warning(
+                        "浏览器通道降级失败 (GET fetch): %s, code=%s",
+                        url, result.get("code"),
+                    )
             return None
         except Exception as e:
-            logger.warning("浏览器通道降级异常: %s - %s", endpoint_name, e)
+            logger.warning("浏览器 GET 通道降级异常: %s - %s", url, e)
             return None
+
+    def _browser_post(
+        self,
+        url: str,
+        json_data: dict | None,
+        headers: dict[str, str],
+        cookies: dict[str, str],
+    ) -> dict | None:
+        try:
+            import json as _json
+
+            from boss_career_ops.boss.browser_client import BrowserClient
+
+            browser = BrowserClient()
+            cookies_for_browser = [
+                {"name": name, "value": value, "domain": ".zhipin.com", "path": "/"}
+                for name, value in cookies.items()
+                if isinstance(value, str) and value
+            ]
+
+            page_obj = browser.get_page()
+            page_obj.goto("https://www.zhipin.com", wait_until="domcontentloaded")
+            page_obj.wait_for_timeout(1000)
+            browser.add_cookies(cookies_for_browser)
+            page_obj.goto(
+                "https://www.zhipin.com/web/geek/job?query=",
+                wait_until="domcontentloaded",
+                timeout=15000,
+            )
+            page_obj.wait_for_timeout(3000)
+
+            js_code = f"""
+            async () => {{
+                try {{
+                    const resp = await fetch("{url}", {{
+                        method: "POST",
+                        credentials: "include",
+                        headers: {{
+                            "Accept": "application/json",
+                            "Content-Type": "application/json",
+                        }},
+                        body: JSON.stringify({_json.dumps(json_data or {})}),
+                    }});
+                    const data = await resp.json();
+                    return data;
+                }} catch (e) {{
+                    return {{_fetch_error: e.message}};
+                }}
+            }}
+            """
+            result = page_obj.evaluate(js_code)
+            page_obj.close()
+            browser.close()
+
+            if result and isinstance(result, dict):
+                if result.get("code") == 0:
+                    logger.info("浏览器通道降级成功 (POST fetch): %s", url)
+                    return result
+                if "_fetch_error" in result:
+                    logger.warning("浏览器 fetch 请求失败: %s", result["_fetch_error"])
+                else:
+                    logger.warning(
+                        "浏览器通道降级失败 (POST fetch): %s, code=%s",
+                        url, result.get("code"),
+                    )
+            return None
+        except Exception as e:
+            logger.warning("浏览器 POST 通道降级异常: %s - %s", url, e)
+            return None
+
+    def _request_via_browser(self, endpoint_name: str, params: dict | None = None) -> dict | None:
+        if endpoint_name not in BROWSER_FALLBACK_ENDPOINTS:
+            return None
+        ep = self._endpoints.get(endpoint_name)
+        if ep is None:
+            return None
+        api_path = ep.path
+        cookies = self._get_cookies()
+        if not cookies:
+            logger.warning("无 Cookie，浏览器通道降级无法注入 Cookie")
+            return None
+
+        if ep.method == "GET":
+            return self._browser_get(api_path, params, {}, cookies)
+
+        stoken_val = ""
+        body_params = {}
+        if params:
+            for k, v in params.items():
+                if k == "__zp_stoken__":
+                    stoken_val = str(v)
+                else:
+                    body_params[k] = v
+        fetch_url = api_path
+        if stoken_val:
+            fetch_url = f"{api_path}?__zp_stoken__={stoken_val}"
+        return self._browser_post(fetch_url, body_params, {}, cookies)
 
     def request(self, endpoint_name: str, params: dict | None = None, json_data: dict | None = None) -> dict:
         ep = self._endpoints.get(endpoint_name)
@@ -223,19 +385,17 @@ class BossClient(metaclass=SingletonMeta):
             raise ValueError(f"未知端点: {endpoint_name}")
         rl = self._thresholds.rate_limit
         max_attempts = rl.retry_max_attempts
+        client = self._get_http_client()
+
         for attempt in range(max_attempts):
             self._gaussian_delay()
             cookies = self._get_cookies()
-            if ep.method == "GET":
-                params = self._inject_stoken(params, cookies=cookies)
+            params = self._inject_stoken(params, cookies=cookies)
             url = self._endpoints.url(endpoint_name)
             headers = self._build_headers(endpoint_name, params, cookies=cookies)
+
             try:
-                with httpx.Client(follow_redirects=True, timeout=30.0) as client:
-                    if ep.method == "GET":
-                        resp = client.get(url, params=params, headers=headers, cookies=cookies)
-                    else:
-                        resp = client.post(url, params=params, json=json_data, headers=headers, cookies=cookies)
+                resp = self._try_http_request(client, ep.method, url, params, json_data, headers, cookies)
             except httpx.TransportError as e:
                 logger.warning("请求传输错误 (尝试 %d/%d): %s", attempt + 1, max_attempts, e)
                 if attempt < max_attempts - 1:
@@ -244,46 +404,35 @@ class BossClient(metaclass=SingletonMeta):
                     time.sleep(backoff)
                     continue
                 return {"ok": False, "code": ErrorCode.NETWORK_ERROR, "message": str(e)}
+
             if resp.status_code != 200:
                 try:
                     resp_data = resp.json()
                 except Exception:
                     resp_data = {}
-                if self._is_rate_limited(resp.status_code, resp_data) and attempt < max_attempts - 1:
-                    self._rate_limit_count += 1
-                    cooldown = min(60, 10 * (2 ** (self._rate_limit_count - 1)))
-                    logger.warning("限流冷却: %d 秒 (第 %d 次限流)", cooldown, self._rate_limit_count)
-                    time.sleep(cooldown)
-                    backoff = self._exponential_backoff_delay(attempt)
-                    logger.warning("限流检测 (尝试 %d/%d): HTTP %d, 退避 %.1f 秒", attempt + 1, max_attempts, resp.status_code, backoff)
-                    time.sleep(backoff)
+                retry_info = self._handle_rate_limit(attempt, max_attempts, resp.status_code, resp_data)
+                if retry_info:
+                    time.sleep(retry_info["cooldown"])
+                    time.sleep(retry_info["backoff"])
                     continue
                 logger.error("请求失败: %s %s → %d", ep.method, url, resp.status_code)
                 return {"ok": False, "code": resp.status_code, "message": f"HTTP {resp.status_code}"}
+
             try:
                 result = resp.json()
             except Exception:
                 return {"ok": False, "code": ErrorCode.PARSE_ERROR, "message": "响应解析失败"}
-            if self._is_rate_limited(0, result) and attempt < max_attempts - 1:
-                self._rate_limit_count += 1
-                cooldown = min(60, 10 * (2 ** (self._rate_limit_count - 1)))
-                logger.warning("限流冷却: %d 秒 (第 %d 次限流)", cooldown, self._rate_limit_count)
-                time.sleep(cooldown)
-                backoff = self._exponential_backoff_delay(attempt)
-                logger.warning("API 限流 (尝试 %d/%d): code=%s, 退避 %.1f 秒", attempt + 1, max_attempts, result.get("code"), backoff)
-                time.sleep(backoff)
+
+            retry_info = self._handle_rate_limit(attempt, max_attempts, 0, result)
+            if retry_info:
+                time.sleep(retry_info["cooldown"])
+                time.sleep(retry_info["backoff"])
                 continue
-            if self._is_risk_blocked(result):
-                logger.warning("风控拦截: %s", result.get("message", ""))
-                result["_risk_blocked"] = True
-                if endpoint_name in BROWSER_FALLBACK_ENDPOINTS:
-                    logger.info("风控拦截，尝试浏览器通道降级: %s", endpoint_name)
-                    browser_result = self._request_via_browser(endpoint_name, params)
-                    if browser_result and browser_result.get("code") == 0:
-                        return browser_result
-                    logger.warning("浏览器通道降级也失败: %s", endpoint_name)
+
+            result = self._handle_risk_block(result, endpoint_name, params)
             self._rate_limit_count = 0
             return result
+
         return {"ok": False, "code": "RATE_LIMITED", "message": "重试次数耗尽，请求仍被限流"}
 
     def get(self, endpoint_name: str, params: dict | None = None) -> dict:

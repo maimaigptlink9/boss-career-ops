@@ -25,7 +25,7 @@ class TestVectorStoreInit:
 class TestAddJd:
     @patch("boss_career_ops.rag.vector_store.chromadb.PersistentClient")
     @patch("boss_career_ops.rag.vector_store.Embedder")
-    def test_add_jd_calls_collection_add(self, mock_embedder_cls, mock_chroma_cls):
+    def test_add_jd_delegates_to_add_jd_batch(self, mock_embedder_cls, mock_chroma_cls):
         mock_client = MagicMock()
         mock_chroma_cls.return_value = mock_client
         mock_embedder = MagicMock()
@@ -50,11 +50,9 @@ class TestAddJd:
             score=3.5,
             grade="C",
         )
-        store.add_jd(doc)
-        mock_jd_col.add.assert_called_once()
-        call_kwargs = mock_jd_col.add.call_args
-        assert call_kwargs[1]["ids"] == ["jd001_0"]
-        assert call_kwargs[1]["documents"] == ["Python开发"]
+        with patch.object(store, "add_jd_batch") as mock_batch:
+            store.add_jd(doc)
+            mock_batch.assert_called_once_with([doc])
 
 
 class TestSearchJd:
@@ -137,11 +135,9 @@ class TestAddJdChunkIdUniqueness:
         with patch("boss_career_ops.rag.vector_store.Path"):
             store = VectorStore(persist_dir="/tmp/test_chroma")
         store.add_jd(doc)
-        assert mock_jd_col.add.call_count == 3
-        ids_used = []
-        for call in mock_jd_col.add.call_args_list:
-            ids_used.append(call[1]["ids"][0])
-        assert ids_used == ["jd002_0", "jd002_1", "jd002_2"]
+        mock_jd_col.add.assert_called_once()
+        call_kwargs = mock_jd_col.add.call_args[1]
+        assert call_kwargs["ids"] == ["jd002_0", "jd002_1", "jd002_2"]
 
 
 class TestAddJdBatchChunkIdUniqueness:

@@ -33,7 +33,7 @@ class PDFEngine:
 
     def _html_to_pdf(self, html_content: str, output_path: Path):
         try:
-            from playwright.sync_api import sync_playwright
+            from patchright.sync_api import sync_playwright
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
                 page = browser.new_page()

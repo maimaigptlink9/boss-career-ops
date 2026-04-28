@@ -5,6 +5,7 @@ import yaml
 
 from boss_career_ops.config.settings import CONFIG_DIR
 from boss_career_ops.config.singleton import SingletonMeta
+from boss_career_ops.errors import ConfigError
 from boss_career_ops.display.logger import get_logger
 
 logger = get_logger(__name__)
@@ -82,6 +83,9 @@ class Thresholds(metaclass=SingletonMeta):
                 default_ttl=cc.get("default_ttl", 3600),
                 search_ttl=cc.get("search_ttl", 1800),
             )
+            self._validate()
+        except ConfigError:
+            raise
         except yaml.YAMLError as e:
             logger.error("阈值配置 YAML 语法错误: %s — %s", self._path, e)
             raise ValueError(f"阈值配置语法错误: {self._path}") from e
@@ -90,4 +94,33 @@ class Thresholds(metaclass=SingletonMeta):
             raise
         except Exception as e:
             logger.error("加载阈值配置异常: %s — %s", self._path, e)
+
+    def _validate(self):
+        aa = self.auto_action
+        rl = self.rate_limit
+        if not (0 <= aa.auto_greet_threshold <= 5):
+            raise ConfigError(
+                f"auto_greet_threshold 必须在 [0, 5] 范围内，当前值: {aa.auto_greet_threshold}",
+                code="INVALID_THRESHOLD_RANGE",
+            )
+        if not (0.5 <= rl.request_delay_min <= 60):
+            raise ConfigError(
+                f"request_delay_min 必须在 [0.5, 60] 范围内，当前值: {rl.request_delay_min}",
+                code="INVALID_THRESHOLD_RANGE",
+            )
+        if rl.request_delay_max < rl.request_delay_min:
+            raise ConfigError(
+                f"request_delay_max ({rl.request_delay_max}) 不能小于 request_delay_min ({rl.request_delay_min})",
+                code="INVALID_THRESHOLD_RANGE",
+            )
+        if not (1 <= rl.batch_greet_max <= 100):
+            raise ConfigError(
+                f"batch_greet_max 必须在 [1, 100] 范围内，当前值: {rl.batch_greet_max}",
+                code="INVALID_THRESHOLD_RANGE",
+            )
+        if not (1 <= rl.retry_max_attempts <= 10):
+            raise ConfigError(
+                f"retry_max_attempts 必须在 [1, 10] 范围内，当前值: {rl.retry_max_attempts}",
+                code="INVALID_THRESHOLD_RANGE",
+            )
 

@@ -1,4 +1,4 @@
-from boss_career_ops.evaluator.scorer import calculate_weighted_score, score_to_grade, grade_label, GRADE_RANGES, GRADE_LABELS
+from boss_career_ops.evaluator.scorer import calculate_weighted_score, score_to_grade, grade_label, get_recommendation, GRADE_RANGES, GRADE_LABELS
 
 
 class TestCalculateWeightedScore:
@@ -65,3 +65,23 @@ class TestGradeLabel:
 
     def test_unknown_grade(self):
         assert grade_label("X") == "未知"
+
+
+class TestGetRecommendation:
+    def test_known_grades(self):
+        assert "强烈推荐" in get_recommendation("A")
+        assert "值得投入" in get_recommendation("B")
+        assert "不推荐" in get_recommendation("F")
+
+    def test_unknown_grade(self):
+        assert get_recommendation("X") == "未知等级"
+
+
+class TestGradeLabelDelegatesToGetRecommendation:
+    def test_known_grades_match(self):
+        for grade in ("A", "B", "C", "D", "F"):
+            assert grade_label(grade) == get_recommendation(grade)
+
+    def test_unknown_grade_differs(self):
+        assert grade_label("X") == "未知"
+        assert get_recommendation("X") == "未知等级"

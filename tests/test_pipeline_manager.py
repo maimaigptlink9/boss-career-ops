@@ -2,8 +2,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from boss_career_ops.config.singleton import SingletonMeta
-from boss_career_ops.pipeline.manager import PipelineManager
+from boss_career_ops.pipeline.manager import PipelineManager, _PIPELINE_COLS, _AI_RESULT_COLS
 from boss_career_ops.pipeline.stages import Stage
 
 
@@ -132,65 +131,157 @@ class TestPipelineManager:
 
 
 class TestPipelineAIResults:
-    def _make_manager(self, tmp_path):
-        SingletonMeta.reset(PipelineManager)
-        return PipelineManager(db_path=tmp_path / "test_pipeline.db")
-
-    def test_save_and_get_ai_result(self, tmp_dir):
-        mgr = self._make_manager(tmp_dir)
-        with mgr:
+    def test_save_and_get_ai_result(self, pipeline_manager):
+        with pipeline_manager:
             result_json = json.dumps({"score": 85, "grade": "A"}, ensure_ascii=False)
-            mgr.save_ai_result("job1", "evaluate", result_json)
+            pipeline_manager.save_ai_result("job1", "evaluate", result_json)
 
-            row = mgr.get_ai_result("job1", "evaluate")
+            row = pipeline_manager.get_ai_result("job1", "evaluate")
             assert row is not None
             assert row["job_id"] == "job1"
             assert row["task_type"] == "evaluate"
             assert row["result"] == result_json
             assert row["source"] == "agent"
 
-    def test_save_ai_result_upsert(self, tmp_dir):
-        mgr = self._make_manager(tmp_dir)
-        with mgr:
-            mgr.save_ai_result("job1", "evaluate", '{"score": 70}')
-            mgr.save_ai_result("job1", "evaluate", '{"score": 90}')
+    def test_save_ai_result_upsert(self, pipeline_manager):
+        with pipeline_manager:
+            pipeline_manager.save_ai_result("job1", "evaluate", '{"score": 70}')
+            pipeline_manager.save_ai_result("job1", "evaluate", '{"score": 90}')
 
-            row = mgr.get_ai_result("job1", "evaluate")
+            row = pipeline_manager.get_ai_result("job1", "evaluate")
             assert row["result"] == '{"score": 90}'
 
-    def test_get_ai_result_not_found(self, tmp_dir):
-        mgr = self._make_manager(tmp_dir)
-        with mgr:
-            assert mgr.get_ai_result("no_job", "evaluate") is None
+    def test_get_ai_result_not_found(self, pipeline_manager):
+        with pipeline_manager:
+            assert pipeline_manager.get_ai_result("no_job", "evaluate") is None
 
-    def test_get_ai_results_multiple(self, tmp_dir):
-        mgr = self._make_manager(tmp_dir)
-        with mgr:
-            mgr.save_ai_result("job1", "evaluate", '{"score": 80}')
-            mgr.save_ai_result("job1", "resume", '{"content": "cv"}')
+    def test_get_ai_results_multiple(self, pipeline_manager):
+        with pipeline_manager:
+            pipeline_manager.save_ai_result("job1", "evaluate", '{"score": 80}')
+            pipeline_manager.save_ai_result("job1", "resume", '{"content": "cv"}')
 
-            rows = mgr.get_ai_results("job1")
+            rows = pipeline_manager.get_ai_results("job1")
             assert len(rows) == 2
             types = {r["task_type"] for r in rows}
             assert types == {"evaluate", "resume"}
 
-    def test_get_ai_results_empty(self, tmp_dir):
-        mgr = self._make_manager(tmp_dir)
-        with mgr:
-            assert mgr.get_ai_results("no_job") == []
+    def test_get_ai_results_empty(self, pipeline_manager):
+        with pipeline_manager:
+            assert pipeline_manager.get_ai_results("no_job") == []
 
-    def test_save_ai_result_custom_source(self, tmp_dir):
-        mgr = self._make_manager(tmp_dir)
-        with mgr:
-            mgr.save_ai_result("job1", "evaluate", "{}", source="rule_engine")
-            row = mgr.get_ai_result("job1", "evaluate")
+    def test_save_ai_result_custom_source(self, pipeline_manager):
+        with pipeline_manager:
+            pipeline_manager.save_ai_result("job1", "evaluate", "{}", source="rule_engine")
+            row = pipeline_manager.get_ai_result("job1", "evaluate")
             assert row["source"] == "rule_engine"
 
-    def test_ai_result_without_open_raises(self, tmp_dir):
-        SingletonMeta.reset(PipelineManager)
-        mgr = PipelineManager(db_path=tmp_dir / "never.db")
+    def test_ai_result_without_open_raises(self, pipeline_manager):
         try:
-            mgr.save_ai_result("job1", "evaluate", "{}")
+            pipeline_manager.save_ai_result("job1", "evaluate", "{}")
             assert False, "应抛出 RuntimeError"
         except RuntimeError as e:
             assert "未打开" in str(e)
+
+
+class TestBatchCommit:
+    def test_batch_commit_multiple_writes(self, pipeline_manager):
+        with pipeline_manager:
+            with pipeline_manager.batch_commit():
+                pipeline_manager.upsert_job("job1", job_name="A")
+                pipeline_manager.upsert_job("job2", job_name="B")
+                pipeline_manager.update_score("job1", 4.5, "B+")
+                pipeline_manager.update_stage("job1", Stage.EVALUATED)
+            job1 = pipeline_manager.get_job("job1")
+            assert job1 is not None
+            assert job1["job_name"] == "A"
+            assert job1["score"] == 4.5
+            assert job1["grade"] == "B+"
+            assert job1["stage"] == Stage.EVALUATED.value
+            job2 = pipeline_manager.get_job("job2")
+            assert job2 is not None
+            assert job2["job_name"] == "B"
+
+    def test_batch_commit_ai_results(self, pipeline_manager):
+        with pipeline_manager:
+            with pipeline_manager.batch_commit():
+                pipeline_manager.save_ai_result("job1", "evaluate", '{"score": 80}')
+                pipeline_manager.save_ai_result("job1", "resume", '{"content": "cv"}')
+            rows = pipeline_manager.get_ai_results("job1")
+            assert len(rows) == 2
+
+    def test_batch_mode_resets_after_context(self, pipeline_manager):
+        with pipeline_manager:
+            assert pipeline_manager._batch_mode is False
+            with pipeline_manager.batch_commit():
+                assert pipeline_manager._batch_mode is True
+            assert pipeline_manager._batch_mode is False
+
+    def test_batch_mode_resets_on_exception(self, pipeline_manager):
+        with pipeline_manager:
+            try:
+                with pipeline_manager.batch_commit():
+                    pipeline_manager.upsert_job("job1")
+                    raise ValueError("test error")
+            except ValueError:
+                pass
+            assert pipeline_manager._batch_mode is False
+
+    def test_non_batch_still_auto_commits(self, pipeline_manager):
+        with pipeline_manager:
+            pipeline_manager.upsert_job("job1", job_name="Standalone")
+            job = pipeline_manager.get_job("job1")
+            assert job is not None
+            assert job["job_name"] == "Standalone"
+
+    def test_batch_commit_single_transaction(self, pipeline_manager):
+        with pipeline_manager:
+            with pipeline_manager.batch_commit():
+                pipeline_manager.upsert_job("job1")
+                pipeline_manager.upsert_job("job2")
+                pipeline_manager.update_score("job1", 3.0, "C")
+                job1 = pipeline_manager.get_job("job1")
+                assert job1 is not None
+                assert job1["score"] == 3.0
+                job2 = pipeline_manager.get_job("job2")
+                assert job2 is not None
+            job1_after = pipeline_manager.get_job("job1")
+            assert job1_after["score"] == 3.0
+            assert job1_after["grade"] == "C"
+
+
+class TestDatabaseIndexes:
+    def test_indexes_exist(self, pipeline_manager):
+        with pipeline_manager:
+            cursor = pipeline_manager._conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='index'"
+            )
+            index_names = {row[0] for row in cursor.fetchall()}
+        assert "idx_pipeline_stage" in index_names
+        assert "idx_pipeline_updated" in index_names
+        assert "idx_ai_results_job_task" in index_names
+
+
+class TestColumnConstants:
+    def test_pipeline_cols_match_schema(self, pipeline_manager):
+        with pipeline_manager:
+            cursor = pipeline_manager._conn.execute("PRAGMA table_info(pipeline)")
+            db_cols = [row[1] for row in cursor.fetchall()]
+        assert _PIPELINE_COLS == db_cols
+
+    def test_ai_result_cols_match_schema(self, pipeline_manager):
+        with pipeline_manager:
+            cursor = pipeline_manager._conn.execute("PRAGMA table_info(ai_results)")
+            db_cols = [row[1] for row in cursor.fetchall()]
+        assert _AI_RESULT_COLS == db_cols
+
+    def test_get_job_uses_pipeline_cols(self, pipeline_manager):
+        with pipeline_manager:
+            pipeline_manager.upsert_job("j1", job_name="Test", company_name="Co", salary_desc="10K", security_id="s1")
+            job = pipeline_manager.get_job("j1")
+            assert list(job.keys()) == _PIPELINE_COLS
+
+    def test_get_ai_result_uses_ai_result_cols(self, pipeline_manager):
+        with pipeline_manager:
+            pipeline_manager.save_ai_result("j1", "evaluate", '{"score": 80}')
+            result = pipeline_manager.get_ai_result("j1", "evaluate")
+            assert list(result.keys()) == _AI_RESULT_COLS

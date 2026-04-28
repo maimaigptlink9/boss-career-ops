@@ -1,0 +1,519 @@
+go:
+  - golang
+  - go语言
+  - go后端
+k8s:
+  - kubernetes
+  - 云原生
+  - 容器编排
+  - k8s集群
+docker:
+  - 容器化
+  - 容器技术
+  - containerd
+  - docker-compose
+grpc:
+  - grpc
+  - 微服务通信
+  - rpc框架
+js:
+  - javascript
+ts:
+  - typescript
+py:
+  - python
+rn:
+  - react native
+pg:
+  - postgresql
+mysql:
+  - mariadb
+  - 关系型数据库
+  - rdbms
+redis:
+  - 缓存
+  - nosql
+  - 键值存储
+kafka:
+  - apache kafka
+  - 消息队列
+  - mq
+  - 消息中间件
+es:
+  - elasticsearch
+  - 搜索引擎
+  - 全文检索
+cv:
+  - opencv
+  - computer vision
+  - 计算机视觉
+ml:
+  - machine learning
+  - 机器学习
+dl:
+  - deep learning
+  - 深度学习
+nlp:
+  - natural language processing
+  - 自然语言处理
+devops:
+  - sre
+  - platform engineering
+  - 运维开发
+  - 平台工程
+ci/cd:
+  - 持续集成
+  - 持续部署
+  - jenkins
+  - gitlab ci
+  - github actions
+microservice:
+  - 微服务
+  - microservices
+  - 服务化
+  - 分布式服务
+distributed:
+  - 分布式
+  - distributed system
+  - 高可用
+  - 高并发
+terraform:
+  - 基础设施即代码
+  - iac
+  - infrastructure as code
+aws:
+  - amazon web services
+  - 云计算
+  - 云服务
+  - 亚马逊云
+azure:
+  - 微软云
+  - microsoft azure
+linux:
+  - linux运维
+  - 服务器
+  - shell
+  - bash
+java:
+  - jvm
+  - spring
+  - springboot
+  - spring boot
+c++:
+  - cpp
+  - c plus plus
+rust:
+  - rust语言
+vue:
+  - vue.js
+  - vuejs
+  - vue3
+react:
+  - react.js
+  - reactjs
+  - react18
+angular:
+  - angular.js
+  - angularjs
+node:
+  - node.js
+  - nodejs
+  - nodejs开发
+flutter:
+  - dart
+  - 跨平台
+  - flutter开发
+swift:
+  - ios开发
+  - swift语言
+android:
+  - 安卓开发
+  - android开发
+  - kotlin
+产品经理:
+  - pm
+  - product manager
+  - 产品策划
+  - 产品设计
+  - 产品规划
+需求分析:
+  - 需求挖掘
+  - 需求调研
+  - 用户需求
+  - 需求文档
+  - prd
+  - brd
+原型设计:
+  - axure
+  - 墨刀
+  - figma原型
+  - 交互原型
+  - 产品原型
+竞品分析:
+  - 竞品调研
+  - 竞品研究
+  - 竞品对比
+  - 市场分析
+用户研究:
+  - 用研
+  - user research
+  - 用户体验研究
+  - 用户调研
+数据驱动:
+  - 数据驱动决策
+  - 数据化运营
+  - 数据分析驱动
+b端产品:
+  - 企业级产品
+  - saas产品
+  - 后台产品
+  - 中台产品
+  - to b
+c端产品:
+  - 消费级产品
+  - 用户产品
+  - 前端产品
+  - to c
+用户运营:
+  - 用户增长
+  - 用户管理
+  - 用户体系
+  - 用户生命周期
+  - 用户留存
+内容运营:
+  - 内容策划
+  - 内容编辑
+  - 内容分发
+  - 内容矩阵
+  - 内容生态
+社区运营:
+  - 社群运营
+  - 社区管理
+  - 社区建设
+  - 社区活跃
+  - 社群维护
+活动运营:
+  - 活动策划
+  - 活动执行
+  - 营销活动
+  - 促销活动
+  - 线上活动
+新媒体运营:
+  - 公众号运营
+  - 自媒体
+  - 新媒体营销
+  - 公众号
+  - 视频号
+直播运营:
+  - 直播间运营
+  - 直播策划
+  - 直播带货
+  - 主播管理
+私域运营:
+  - 私域流量
+  - 社群营销
+  - 企微运营
+  - 私域转化
+增长运营:
+  - 增长黑客
+  - growth hacking
+  - 用户增长
+  - 裂变
+  - 拉新
+数据运营:
+  - 数据分析运营
+  - 运营数据分析
+  - 数据监控
+数字营销:
+  - digital marketing
+  - 数字化营销
+  - 线上营销
+  - 网络营销
+品牌营销:
+  - 品牌推广
+  - 品牌建设
+  - 品牌传播
+  - 品牌策略
+效果营销:
+  - 效果广告
+  - sem
+  - 信息流广告
+  - 投放优化
+  - roi优化
+seo:
+  - 搜索引擎优化
+  - 网站优化
+  - 自然流量
+sem:
+  - 搜索引擎营销
+  - 百度推广
+  - 竞价排名
+  - 搜索广告
+投放:
+  - 广告投放
+  - 信息流投放
+  - 程序化购买
+  - dsp
+  - feed流
+品牌策划:
+  - 品牌定位
+  - 品牌规划
+  - 品牌形象
+市场推广:
+  - 市场拓展
+  - 渠道推广
+  - 线下推广
+pr:
+  - 公关
+  - public relations
+  - 媒体关系
+  - 危机公关
+ui设计:
+  - ui
+  - user interface
+  - 界面设计
+  - 视觉设计
+  - ui设计师
+ux设计:
+  - ux
+  - user experience
+  - 用户体验设计
+  - 交互设计
+  - ux设计师
+视觉设计:
+  - 平面设计
+  - graphic design
+  - 品牌视觉
+  - vi设计
+交互设计:
+  - interaction design
+  - 交互体验
+  - 交互逻辑
+动效设计:
+  - motion design
+  - 动画设计
+  - 动效
+  - 交互动效
+figma:
+  - sketch
+  - 设计工具
+  - 协作设计
+3d设计:
+  - 3d建模
+  - c4d
+  - blender
+  - 三维设计
+插画设计:
+  - 手绘
+  - 商业插画
+  - 原画
+  - 插画师
+数据分析:
+  - data analysis
+  - data analyst
+  - 数据分析岗
+  - 数据分析师
+sql:
+  - 数据库查询
+  - 结构化查询
+  - hive sql
+  - spark sql
+bi:
+  - business intelligence
+  - 商业智能
+  - 数据可视化
+  - 数据看板
+tableau:
+  - 数据可视化工具
+  - bi工具
+python数据分析:
+  - pandas
+  - numpy
+  - 数据清洗
+  - 数据挖掘
+ab测试:
+  - ab实验
+  - a/b测试
+  - 实验设计
+  - 假设检验
+数据建模:
+  - 数据模型
+  - 数据仓库
+  - etl
+  - 数据治理
+招聘:
+  - recruitment
+  - 人才招聘
+  - 校招
+  - 社招
+  - 猎头
+hrbp:
+  - 人力资源业务伙伴
+  - 业务hr
+  - 政委
+薪酬福利:
+  - compensation
+  - 薪酬体系
+  - 绩效管理
+  - 薪酬设计
+组织发展:
+  - od
+  - organizational development
+  - 组织架构
+  - 人才发展
+培训发展:
+  - td
+  - 人才培训
+  - 企业培训
+  - 学习发展
+  - ld
+员工关系:
+  - 劳动关系
+  - hr合规
+  - 人事管理
+财务分析:
+  - financial analysis
+  - 财务报表
+  - 财务模型
+  - 财务预测
+会计:
+  - accounting
+  - 账务处理
+  - 总账
+  - 应收应付
+审计:
+  - auditing
+  - 内部审计
+  - 外部审计
+  - 合规审计
+税务:
+  - tax
+  - 税务筹划
+  - 税务申报
+  - 税务合规
+成本控制:
+  - 成本核算
+  - 成本管理
+  - 预算管理
+cpa:
+  - 注册会计师
+  - certified public accountant
+b2b销售:
+  - 企业销售
+  - 大客户销售
+  - ka销售
+  - 解决方案销售
+b2c销售:
+  - 个人销售
+  - 零售销售
+  - 渠道销售
+客户成功:
+  - customer success
+  - cs
+  - 客户管理
+  - 客户维护
+商务拓展:
+  - bd
+  - business development
+  - 商务合作
+  - 渠道拓展
+销售管理:
+  - 团队管理
+  - 销售总监
+  - 区域经理
+文案:
+  - copywriting
+  - 文案策划
+  - 创意文案
+  - 内容创作
+编辑:
+  - 内容编辑
+  - 文字编辑
+  - 主编
+  - 副主编
+短视频:
+  - 短视频制作
+  - 短视频运营
+  - 抖音运营
+  - tiktok
+自媒体:
+  - 自媒体运营
+  - 博主
+  - up主
+  - 创作者
+编导:
+  - 视频编导
+  - 内容编导
+  - 节目策划
+电商运营:
+  - 店铺运营
+  - 淘宝运营
+  - 天猫运营
+  - 京东运营
+  - 拼多多运营
+跨境电商:
+  - amazon运营
+  - shopee运营
+  - 外贸电商
+  - 独立站
+供应链:
+  - supply chain
+  - 供应链管理
+  - 采购管理
+  - 仓储物流
+法务:
+  - legal
+  - 法律顾问
+  - 公司法务
+  - 合同审核
+合规:
+  - compliance
+  - 风控合规
+  - 监管合规
+知识产权:
+  - ip
+  - 专利
+  - 商标
+  - 版权
+行政管理:
+  - 行政
+  - 办公室管理
+  - 前台
+  - 行政助理
+项目助理:
+  - 项目协调
+  - 项目支持
+  - pmo
+ceo助理:
+  - 总裁助理
+  - 总经理助理
+  - 高管助理
+项目管理:
+  - project management
+  - pmp
+  - 敏捷管理
+  - scrum
+  - 看板
+沟通协调:
+  - 跨部门协作
+  - 沟通能力
+  - 团队协作
+英语:
+  - english
+  - 英语能力
+  - 英语沟通
+  - 英文读写
+日语:
+  - japanese
+  - 日语能力
+  - n1
+  - n2
+ppt:
+  - 演示文稿
+  - 汇报
+  - 方案呈现
+excel:
+  - 数据处理
+  - 数据统计
+  - 电子表格
+  - vlookup

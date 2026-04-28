@@ -1,0 +1,81 @@
+# LLM Provider 注册地址与免费额度配置
+# 用户可在此文件中维护各 AI 提供商的注册地址、免费额度等信息
+# Web 前端设置页会读取此文件展示给用户
+
+providers:
+  deepseek:
+    name: DeepSeek
+    description: "国内最强性价比大模型，中文能力优秀"
+    register_url: ""  # TODO: 填入注册地址
+    api_key_url: ""   # TODO: 填入 API Key 创建页面地址
+    free_tokens: ""   # TODO: 填入免费额度描述，如 "新用户赠送 500 万 tokens"
+    pricing_hint: ""  # TODO: 填入价格提示，如 "评估 1000 个职位约消耗 10 万 tokens"
+    base_url: "https://api.deepseek.com/v1"
+    default_model: "deepseek-chat"
+    recommended: true
+
+  qwen:
+    name: 通义千问
+    description: "阿里云大模型，国内注册最方便"
+    register_url: ""  # TODO: 填入注册地址
+    api_key_url: ""   # TODO: 填入 API Key 创建页面地址
+    free_tokens: ""   # TODO: 填入免费额度描述
+    pricing_hint: ""  # TODO: 填入价格提示
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    default_model: "qwen-plus"
+    recommended: true
+
+  zhipu:
+    name: 智谱 GLM
+    description: "清华系大模型，学术背景强"
+    register_url: ""  # TODO: 填入注册地址
+    api_key_url: ""   # TODO: 填入 API Key 创建页面地址
+    free_tokens: ""   # TODO: 填入免费额度描述
+    pricing_hint: ""  # TODO: 填入价格提示
+    base_url: "https://open.bigmodel.cn/api/paas/v4"
+    default_model: "glm-4-flash"
+    recommended: false
+
+  moonshot:
+    name: Moonshot (Kimi)
+    description: "长上下文能力强，适合分析长 JD"
+    register_url: ""  # TODO: 填入注册地址
+    api_key_url: ""   # TODO: 填入 API Key 创建页面地址
+    free_tokens: ""   # TODO: 填入免费额度描述
+    pricing_hint: ""  # TODO: 填入价格提示
+    base_url: "https://api.moonshot.cn/v1"
+    default_model: "moonshot-v1-8k"
+    recommended: false
+
+  siliconflow:
+    name: SiliconFlow
+    description: "模型聚合平台，可同时用多个模型"
+    register_url: ""  # TODO: 填入注册地址
+    api_key_url: ""   # TODO: 填入 API Key 创建页面地址
+    free_tokens: ""   # TODO: 填入免费额度描述
+    pricing_hint: ""  # TODO: 填入价格提示
+    base_url: "https://api.siliconflow.cn/v1"
+    default_model: "deepseek-ai/DeepSeek-V3"
+    recommended: false
+
+  openai:
+    name: OpenAI
+    description: "GPT 系列模型，需海外账号"
+    register_url: ""  # TODO: 填入注册地址
+    api_key_url: ""   # TODO: 填入 API Key 创建页面地址
+    free_tokens: ""   # TODO: 填入免费额度描述
+    pricing_hint: ""  # TODO: 填入价格提示
+    base_url: ""
+    default_model: "gpt-4o-mini"
+    recommended: false
+
+  local:
+    name: 本地模型
+    description: "本地部署的模型，需自行指定 base_url"
+    register_url: ""
+    api_key_url: ""
+    free_tokens: ""
+    pricing_hint: ""
+    base_url: ""
+    default_model: "llama3"
+    recommended: false

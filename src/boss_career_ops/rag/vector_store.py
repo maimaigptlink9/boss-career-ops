@@ -40,15 +40,7 @@ class VectorStore:
         return self._client.get_or_create_collection(**kwargs)
 
     def add_jd(self, doc: JDDocument) -> None:
-        chunks = chunk_jd(doc)
-        for i, chunk in enumerate(chunks):
-            chunk_id = f"{doc.doc_id}_{i}"
-            self._jd_collection.add(
-                ids=[chunk_id],
-                documents=[chunk["content"]],
-                metadatas=[chunk["metadata"]],
-            )
-        logger.info("JD 入库: %s - %s", doc.doc_id, doc.job_name)
+        self.add_jd_batch([doc])
 
     def add_jd_batch(self, docs: list[JDDocument]) -> None:
         all_ids = []
@@ -105,6 +97,8 @@ class VectorStore:
                 include=["documents", "metadatas", "distances"],
             )
         except Exception:
+            if filters:
+                logger.warning("搜索条件降级：过滤条件 '%s' 不被支持，已忽略", filters)
             results = self._jd_collection.query(
                 query_texts=kwargs["query_text"],
                 n_results=kwargs["n_results"],
@@ -127,6 +121,8 @@ class VectorStore:
                 include=["documents", "metadatas", "distances"],
             )
         except Exception:
+            if filters:
+                logger.warning("搜索条件降级：过滤条件 '%s' 不被支持，已忽略", filters)
             results = self._resume_collection.query(
                 query_texts=kwargs["query_text"],
                 n_results=kwargs["n_results"],

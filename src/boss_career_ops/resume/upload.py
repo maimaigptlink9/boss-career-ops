@@ -30,8 +30,8 @@ class ResumeUploader:
             tmp_dir = tempfile.mkdtemp(prefix="bco_upload_")
             tmp_path = Path(tmp_dir) / display_name
             shutil.copy2(pdf_path, tmp_path)
-            bridge = BridgeClient()
-            if bridge.is_available():
+            if self._browser.is_bridge_available():
+                bridge = BridgeClient()
                 result = self._upload_via_bridge(bridge, tmp_path)
                 if result.get("ok"):
                     return result

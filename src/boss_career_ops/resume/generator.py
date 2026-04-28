@@ -2,6 +2,7 @@ import re
 from typing import Any
 
 from boss_career_ops.config.settings import Settings
+from boss_career_ops.evaluator.utils import extract_jd_text
 
 
 class ResumeGenerator:
@@ -35,7 +36,7 @@ class ResumeGenerator:
             result_lines.append("## 核心技能")
             for skill in jd_skills:
                 result_lines.append(f"- {skill}")
-        header = f"<!-- 针对 {job.get('jobName', '')} @ {job.get('brandName', '')} 定制 -->"
+        header = f"<!-- 针对 {job.get('job_name', '')} @ {job.get('company_name', '')} 定制 -->"
         return header + "\n" + "\n".join(result_lines)
 
     def _generate_from_profile(self, job: dict, profile: Any) -> str:
@@ -60,13 +61,7 @@ class ResumeGenerator:
         return "\n".join(lines)
 
     def _extract_jd_text(self, job: dict) -> str:
-        parts = [
-            job.get("jobName", ""),
-            job.get("skills", ""),
-            job.get("postDescription", ""),
-            job.get("jobLabels", ""),
-        ]
-        return " ".join(str(p) for p in parts if p)
+        return extract_jd_text(job)
 
     def _extract_skills_from_jd(self, jd_text: str) -> list[str]:
         common_skills = [

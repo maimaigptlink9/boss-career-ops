@@ -11,7 +11,7 @@ class TestEndpoints:
         eps = Endpoints()
         ep = eps.get("search")
         assert ep is not None
-        assert ep.method == "GET"
+        assert ep.method == "POST"
         assert "search" in ep.path
 
     def test_get_unknown_endpoint(self):

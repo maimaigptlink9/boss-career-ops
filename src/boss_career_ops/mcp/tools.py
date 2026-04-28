@@ -1,7 +1,14 @@
 import json
 
+from boss_career_ops.errors import Result
 from mcp.server import Server
 from mcp.types import TextContent, Tool
+
+
+def _serialize(obj) -> str:
+    if isinstance(obj, Result):
+        return json.dumps(obj.to_dict(), ensure_ascii=False, indent=2)
+    return json.dumps(obj, ensure_ascii=False, indent=2)
 
 
 def register_tools(app: Server):
@@ -164,11 +171,10 @@ def register_tools(app: Server):
                 ]
 
             elif name == "evaluate_job":
-                from boss_career_ops.agent.tools import get_job_detail
-                from boss_career_ops.evaluator.engine import EvaluationEngine
+                from boss_career_ops.agent.tools import evaluate_job
 
-                job = get_job_detail(arguments.get("job_id", ""))
-                if not job:
+                result = evaluate_job(arguments.get("job_id", ""))
+                if result is None:
                     return [
                         TextContent(
                             type="text",
@@ -177,8 +183,6 @@ def register_tools(app: Server):
                             ),
                         )
                     ]
-                engine = EvaluationEngine()
-                result = engine.evaluate(job)
                 return [
                     TextContent(
                         type="text",
@@ -187,11 +191,10 @@ def register_tools(app: Server):
                 ]
 
             elif name == "generate_resume":
-                from boss_career_ops.agent.tools import get_job_detail
-                from boss_career_ops.resume.generator import ResumeGenerator
+                from boss_career_ops.agent.tools import generate_resume
 
-                job = get_job_detail(arguments.get("job_id", ""))
-                if not job:
+                result = generate_resume(arguments.get("job_id", ""))
+                if result is None:
                     return [
                         TextContent(
                             type="text",
@@ -200,9 +203,7 @@ def register_tools(app: Server):
                             ),
                         )
                     ]
-                generator = ResumeGenerator()
-                resume_md = generator.generate(job)
-                return [TextContent(type="text", text=resume_md)]
+                return [TextContent(type="text", text=result)]
 
             elif name == "greet_recruiter":
                 from boss_career_ops.agent.tools import greet_recruiter
@@ -212,10 +213,7 @@ def register_tools(app: Server):
                     arguments.get("job_id", ""),
                 )
                 return [
-                    TextContent(
-                        type="text",
-                        text=json.dumps(result, ensure_ascii=False, indent=2),
-                    )
+                    TextContent(type="text", text=_serialize(result))
                 ]
 
             elif name == "apply_job":
@@ -226,10 +224,7 @@ def register_tools(app: Server):
                     arguments.get("job_id", ""),
                 )
                 return [
-                    TextContent(
-                        type="text",
-                        text=json.dumps(result, ensure_ascii=False, indent=2),
-                    )
+                    TextContent(type="text", text=_serialize(result))
                 ]
 
             elif name == "get_pipeline":
@@ -280,10 +275,7 @@ def register_tools(app: Server):
 
                 result = prepare_interview(arguments.get("job_id", ""))
                 return [
-                    TextContent(
-                        type="text",
-                        text=json.dumps(result, ensure_ascii=False, indent=2),
-                    )
+                    TextContent(type="text", text=_serialize(result))
                 ]
 
             else:

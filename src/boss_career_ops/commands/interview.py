@@ -1,5 +1,6 @@
 from boss_career_ops.platform.registry import get_active_adapter
 from boss_career_ops.config.settings import Settings
+from boss_career_ops.evaluator.utils import extract_jd_text
 from boss_career_ops.pipeline.manager import PipelineManager
 from boss_career_ops.display.output import output_json, output_error
 from boss_career_ops.display.logger import get_logger
@@ -51,8 +52,7 @@ def _generate_interview_prep(job, settings) -> dict:
 
 
 def _extract_jd_text(job) -> str:
-    parts = [job.job_name, ",".join(job.skills) if job.skills else "", job.description]
-    return " ".join(str(p) for p in parts if p)
+    return extract_jd_text(job)
 
 
 def _extract_company_info(job) -> dict:
