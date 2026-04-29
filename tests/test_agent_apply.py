@@ -14,8 +14,8 @@ class TestApplyNodeWithLlm:
         mock_llm.invoke.return_value = response
         mock_get_llm.return_value = mock_llm
         from boss_career_ops.agent.prompts import APPLY_SYSTEM
-        assert "打招呼" in APPLY_SYSTEM
-        assert "100字" in APPLY_SYSTEM
+        assert "打招呼" in APPLY_SYSTEM.template
+        assert "100字" in APPLY_SYSTEM.template
 
 
 class TestApplyNodeWithoutLlm:

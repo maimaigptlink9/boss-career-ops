@@ -1,11 +1,14 @@
 import os
 from pathlib import Path
+from typing import Callable, Optional
 
 from boss_career_ops.display.logger import get_logger
 
 logger = get_logger(__name__)
 
 _llm_instance = None
+
+_CONFIG_PROVIDER = None
 
 _PROVIDERS_FILE = Path(__file__).parent.parent / "data" / "llm_providers.yml"
 
@@ -45,26 +48,55 @@ def _load_provider_defaults() -> dict:
 PROVIDER_DEFAULTS = _load_provider_defaults()
 
 
-def get_llm():
-    global _llm_instance
-    if _llm_instance is not None:
-        return _llm_instance
+def set_config_provider(provider: Optional[Callable[[], dict]]) -> None:
+    """注入外部配置提供者，避免对 ai_config 的动态导入依赖"""
+    global _CONFIG_PROVIDER
+    _CONFIG_PROVIDER = provider
 
+
+def _resolve_api_config() -> tuple[str, str, str, str]:
+    """从环境变量和注入的配置提供者解析 LLM 配置
+
+    优先级：环境变量 > 注入的配置提供者 > 默认值
+    返回：(api_key, provider, base_url, model)
+    """
     api_key = os.environ.get("BCO_LLM_API_KEY", "")
     provider_from_env = bool(os.environ.get("BCO_LLM_PROVIDER", ""))
     provider = os.environ.get("BCO_LLM_PROVIDER", "deepseek").lower()
     base_url = os.environ.get("BCO_LLM_BASE_URL", "")
     model = os.environ.get("BCO_LLM_MODEL", "")
 
-    if not api_key:
+    if not api_key and _CONFIG_PROVIDER is not None:
         try:
-            from boss_career_ops.config.ai_config import get_ai_config
-            config = get_ai_config()
-            api_key = config.get("api_key", "")
-            if api_key and not provider_from_env:
-                provider = config.get("provider", "deepseek").lower()
+            cfg = _CONFIG_PROVIDER()
+            fallback_key = cfg.get("api_key", "")
+            if fallback_key:
+                api_key = fallback_key
+                if not provider_from_env:
+                    provider = cfg.get("provider", "deepseek").lower()
+                if not base_url:
+                    base_url = cfg.get("base_url", "")
+                if not model:
+                    model = cfg.get("model", "")
         except Exception:
             pass
+
+    return api_key, provider, base_url, model
+
+
+try:
+    from boss_career_ops.config.ai_config import get_ai_config
+    set_config_provider(get_ai_config)
+except ImportError:
+    pass
+
+
+def get_llm():
+    global _llm_instance
+    if _llm_instance is not None:
+        return _llm_instance
+
+    api_key, provider, base_url, model = _resolve_api_config()
 
     if not api_key:
         logger.info("未配置 BCO_LLM_API_KEY，LLM 不可用")
@@ -106,9 +138,10 @@ def reset_llm():
 def is_llm_available() -> bool:
     if os.environ.get("BCO_LLM_API_KEY", ""):
         return True
-    try:
-        from boss_career_ops.config.ai_config import get_ai_config
-        config = get_ai_config()
-        return bool(config.get("api_key", ""))
-    except Exception:
-        return False
+    if _CONFIG_PROVIDER is not None:
+        try:
+            cfg = _CONFIG_PROVIDER()
+            return bool(cfg.get("api_key", ""))
+        except Exception:
+            pass
+    return False

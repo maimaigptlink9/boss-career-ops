@@ -1,7 +1,7 @@
 ---
 name: "boss-career-ops"
-skill_version: "0.5.1"
-description: "BOSS直聘AI求职全流程CLI工具，覆盖搜索/评估/投递/沟通/面试闭环。Agent直接编排AI任务（评估/润色/摘要/面试准备），无需外部API。Invoke when user asks about job search, BOSS直聘, 职位搜索, 投递, 打招呼, 面试, or any job-hunting operations."
+skill_version: "0.7.0"
+description: "BOSS直聘AI求职全流程CLI工具，覆盖搜索/评估/投递/沟通/面试闭环。Agent直接编排AI任务（评估/润色/摘要/面试准备），无需外部API。零配置可用（规则引擎开箱即用），AI无缝升级。Invoke when user asks about job search, BOSS直聘, 职位搜索, 投递, 打招呼, 面试, or any job-hunting operations."
 ---
 
 # Boss-Career-Ops Skill
@@ -10,6 +10,8 @@ BOSS 直聘 AI 求职全流程系统。通过 `bco` CLI 命令完成从职位发
 AI 任务（评估/润色/摘要/面试准备）由 Agent 直接完成，无需配置外部 LLM API。
 
 核心原则：**AI 评估推荐，人决定行动。系统自动执行高分职位，低分职位需人工确认。**
+
+零配置可用：规则引擎开箱即用（5 维评分 + 等级 + 推荐语 + 匹配原因），AI 是无缝升级而非前置条件。
 
 ## 全局选项
 
@@ -96,10 +98,11 @@ bco status
 ```
 
 - 若未登录，执行 `bco login` 提示用户登录
-- 登录方式 3 级降级：Bridge Cookie → CDP → patchright，系统自动选择
+- 登录方式 4 级降级：Bridge Cookie → CDP → QR httpx → patchright，系统自动选择
 - **登录需要用户交互**，Agent 必须等待用户完成操作：
   - Bridge Cookie 方式：系统自动启动 Daemon 并等待 Chrome 扩展连接，扩展在 Chrome 内部读取 Cookie 绕过 ABE 加密，无需手动操作
   - CDP 方式：系统自动检测 Chrome Profile 并启动调试模式，默认选择第一个配置文件；多配置文件时可通过 `bco login --profile <目录名>` 指定；若 Chrome 正在运行则需用户先关闭
+  - QR httpx 方式：纯 HTTP 二维码登录，终端显示二维码链接，用户用 BOSS App 扫码，无需浏览器
   - patchright 方式会弹出浏览器窗口，需用户手动扫码或操作
   - Agent 不应跳过此步骤，必须确认登录成功后再继续
 
@@ -149,11 +152,20 @@ bco status
 
 | 维度 | 权重 | 评估内容 |
 |------|------|----------|
-| 匹配度 | 30% | 技能、经验、学历与 JD 的匹配程度 |
-| 薪资 | 25% | 薪资范围与预期的对比，行业竞争力 |
-| 地点 | 15% | 通勤距离、城市偏好、远程可能性 |
-| 发展 | 15% | 职业成长空间、技术栈前瞻性、团队规模 |
-| 团队 | 15% | 公司阶段、团队文化、面试反馈信号 |
+| 匹配度 | 30% | 技能、经验、学历与 JD 的匹配程度（全行业同义词表 ~100 组） |
+| 薪资 | 25% | 薪资范围与预期的对比，连续评分（非阶梯跳变） |
+| 地点 | 15% | 城市偏好、邻近城市支持、远程可能性 |
+| 发展 | 15% | 职业成长空间（按岗位类型选关键词：技术/产品/运营/市场/设计/数据/管理） |
+| 团队 | 15% | 公司阶段、团队文化（按岗位类型选关键词） |
+
+### 评分改进
+
+- **评分区分度提升**：发展/团队基准分从 3.0 降至 1.5，解决评分集中在 C 级的问题
+- **全行业同义词表**：覆盖技术/产品/运营/市场/设计/数据/财务/人力/销售/内容/电商/法务/行政/通用共 ~100 组
+- **匹配原因输出**：每个评估结果包含 `match_reasons`（优势）和 `mismatch_reasons`（不足）
+- **信息不足标记**：搜索结果缺 description 时标记 `confidence: "preliminary"`，提示查看详情后评分可能变化
+- **薪资连续评分**：用连续函数替代阶梯跳变
+- **邻近城市支持**：广州→深圳 3.5 分（而非 2.0），北京→天津同理
 
 ### 评分等级
 
@@ -170,6 +182,26 @@ bco status
 ```
 搜索职位 → 5维评估 → 自动/手动决策 → 简历定制（Agent润色） → 上传简历 → 打招呼/投递（浏览器通道） → 沟通跟进 → 面试准备 → offer
 ```
+
+## Web 仪表盘工作流
+
+`bco web` 启动 AI 求职决策仪表盘，零配置可用（规则引擎开箱即用）。
+
+### 使用场景
+
+- **决策看板**：Pipeline 看板 + 5 维评分可视化 + 优劣势分析 + 待办提醒
+- **AI 助手**：回复建议、简历定制（预览+下载）、面试准备、技能差距分析
+- **设置页**：AI Key 配置引导（30 秒完成，Provider 信息从 `data/llm_providers.yml` 读取）
+
+### AI 配置 Web 化
+
+未配置 AI 时，规则引擎功能（评分、Pipeline 看板）始终可用。AI 助手页面显示引导提示 + "去设置"按钮。
+
+配置方式：
+1. Web 设置页：`bco web` → 设置 → AI 配置 → 选择 Provider → 粘贴 API Key → 保存
+2. 环境变量：`BCO_LLM_API_KEY` + `BCO_LLM_PROVIDER`
+
+优先级：环境变量 > `~/.bco/ai_config.yml` > 规则引擎
 
 ## Agent AI 编排
 
@@ -221,7 +253,8 @@ Agent:
 |------|------|------|
 | `bco doctor` | 环境诊断 | `bco doctor` |
 | `bco setup` | 初始化配置（首次使用） | `bco setup` |
-| `bco login` | 登录（3级降级：Bridge Cookie→CDP→patchright） | `bco login` 或 `bco login --profile <目录名>` |
+| `bco login` | 登录（4级降级：Bridge Cookie→CDP→QR httpx→patchright） | `bco login` 或 `bco login --profile <目录名>` |
+| `bco logout` | 清除本地登录态 | `bco logout` |
 | `bco status` | 检查登录态 | `bco status` |
 | `bco bridge` | Bridge Daemon 管理 | 见下方子命令 |
 | `bco skill-update` | 检查远程版本并获取最新 skill.md 内容 | `bco skill-update --check` 或 `bco skill-update` |
@@ -261,6 +294,7 @@ Agent:
 | | 输出到文件（绕过管道编码问题） | `bco search <keyword> -o result.json` |
 | `bco recommend` | 基于个人档案的个性化推荐 | `bco recommend` |
 | `bco evaluate` | 5维评估（单个/批量，规则引擎） | `bco evaluate [target]` 或 `bco evaluate --from-search` |
+| `bco detail` | 查看职位完整详情（双通道降级） | `bco detail <security_id>` |
 
 ### 投递与沟通
 
@@ -296,6 +330,7 @@ Agent:
 |------|------|------|
 | `bco interview` | 面试准备（Agent 生成） | `bco interview <job_id>` |
 | `bco dashboard` | 启动 TUI Dashboard（无参数） | `bco dashboard` |
+| `bco web` | 启动 Web 仪表盘（AI 求职决策仪表盘，零配置可用） | `bco web` |
 
 ## 错误码速查表
 
@@ -323,23 +358,37 @@ Agent:
 | `RESUME_UPLOAD_ERROR` | 简历上传失败 | 检查浏览器通道，手动上传 |
 | `APPLY_BROWSER_ERROR` | 浏览器通道不可用 | 启动 Chrome CDP：`chrome.exe --remote-debugging-port=9222` |
 | `AI_NOT_AVAILABLE` | AI 不可用 | 使用 `bco agent-evaluate` + `bco agent-save` 替代 |
+| `AI_NOT_CONFIGURED` | AI 功能需要配置 API Key | 引导用户到 `bco web` 设置页配置，或设置环境变量 |
+| `WEB_AUTH_REQUIRED` | Web 写操作需要认证 | 设置 `BCO_WEB_API_KEY` 环境变量 |
+| `VALIDATION_ERROR` | 参数验证失败 | 检查输入参数 |
 
 ## 环境变量
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | `BCO_HOME` | 配置根目录 | `~/.bco/` |
+| `BCO_LLM_PROVIDER` | LLM 提供者（deepseek/openai/local） | deepseek |
+| `BCO_LLM_API_KEY` | LLM API Key | — |
+| `BCO_LLM_BASE_URL` | API Base URL（兼容 OpenAI 接口） | — |
+| `BCO_LLM_MODEL` | 模型名 | deepseek-chat |
+| `BCO_WEB_API_KEY` | Web 仪表盘写操作认证 Key | —（未设置时仅本地访问，启动时打印警告） |
+| `BCO_EMBEDDING_PROVIDER` | RAG Embedding 提供者（local/openai） | local |
 
 修改 `BCO_HOME` 后，所有配置文件（profile.yml、thresholds.yml、tokens.enc 等）均从新目录读取。
+
+AI 配置优先级：环境变量 > `~/.bco/ai_config.yml`（Web 设置页保存） > 规则引擎。
 
 ## 安全与合规规则
 
 1. **严格遵守阈值配置**，不擅自降低自动执行标准
 2. **所有写操作**（打招呼、投递）前确认用户意图
-3. **速率限制**：系统内置高斯延迟，不要绕过
-4. **敏感信息**（Token、Cookie）不输出到日志或对话
-5. **批量操作上限**：batch-greet 最大 10 个，不要拆分绕过
-6. **串行执行**：禁止并发调用多个 bco 命令（如同时开多个终端运行 search + recommend），必须等上一个命令完成后再执行下一个。并发调用会导致进程间限流失效（每个进程独立计数，高斯延迟/突发惩罚/限流惩罚全部失效），实际 QPS 成倍增长，触发平台风控
-7. 用户提到福利要求时使用 `--welfare` 参数
-8. 评估后根据 `hints.next_actions` 建议下一步
-9. 不要在未评估的情况下直接投递或打招呼
+3. **速率限制**：系统内置高斯延迟 + 5% 概率随机长停顿，不要绕过
+4. **浏览器通道节流**：降级到浏览器时同样受节流控制，不要绕过
+5. **敏感信息**（Token、Cookie、API Key）不输出到日志或对话
+6. **批量操作上限**：batch-greet 最大 10 个，不要拆分绕过
+7. **串行执行**：禁止并发调用多个 bco 命令（如同时开多个终端运行 search + recommend），必须等上一个命令完成后再执行下一个。并发调用会导致进程间限流失效（每个进程独立计数，高斯延迟/突发惩罚/限流惩罚全部失效），实际 QPS 成倍增长，触发平台风控
+8. 用户提到福利要求时使用 `--welfare` 参数
+9. 评估后根据 `hints.next_actions` 建议下一步
+10. 不要在未评估的情况下直接投递或打招呼
+11. **Web 仪表盘**：默认仅本地访问（`127.0.0.1`），写操作需 `BCO_WEB_API_KEY` 认证
+12. **Token 自动刷新**：stoken 过期时系统自动尝试 CDP 刷新，无需用户重新登录

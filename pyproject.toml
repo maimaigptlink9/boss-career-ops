@@ -1,6 +1,6 @@
 [project]
 name = "boss-career-ops"
-version = "0.5.1"
+version = "0.6.0"
 description = "BOSS直聘 AI 求职全流程系统 — 搜索、评估、投递、沟通、面试、谈判闭环"
 readme = "README.md"
 license = "MIT"
@@ -67,6 +67,7 @@ dev = [
     "pytest-mock>=3.12",
     "build>=1.4.3",
     "twine>=6.2.0",
+    "pytest-timeout>=2.4.0",
 ]
 
 [tool.pytest.ini_options]
@@ -74,4 +75,4 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --timeout=60 --timeout-method=thread"

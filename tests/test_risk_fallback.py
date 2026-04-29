@@ -133,7 +133,7 @@ class TestBossClientBrowserFallback:
 
         result = client.request("user_info")
 
-        client._request_via_browser.assert_called_once_with("user_info", {})
+        client._request_via_browser.assert_called_once_with("user_info", {}, json_data=None)
         assert result == browser_result
 
     @patch("boss_career_ops.boss.api.client.httpx.Client")

@@ -39,11 +39,11 @@ class TestOrchestratorWithLlm:
     def test_orchestrator_with_llm_extracts_intent(self, mock_get_llm, mock_llm, sample_state):
         mock_get_llm.return_value = mock_llm
         from boss_career_ops.agent.prompts import ORCHESTRATOR_SYSTEM
-        assert "search" in ORCHESTRATOR_SYSTEM
-        assert "evaluate" in ORCHESTRATOR_SYSTEM
-        assert "resume" in ORCHESTRATOR_SYSTEM
-        assert "apply" in ORCHESTRATOR_SYSTEM
-        assert "gap_analysis" in ORCHESTRATOR_SYSTEM
+        assert "search" in ORCHESTRATOR_SYSTEM.template
+        assert "evaluate" in ORCHESTRATOR_SYSTEM.template
+        assert "resume" in ORCHESTRATOR_SYSTEM.template
+        assert "apply" in ORCHESTRATOR_SYSTEM.template
+        assert "gap_analysis" in ORCHESTRATOR_SYSTEM.template
 
 
 class TestOrchestratorWithoutLlm:

@@ -14,8 +14,8 @@ class TestResumeNodeWithLlm:
         mock_llm.invoke.return_value = response
         mock_get_llm.return_value = mock_llm
         from boss_career_ops.agent.prompts import RESUME_SYSTEM
-        assert "简历" in RESUME_SYSTEM
-        assert "ATS" in RESUME_SYSTEM
+        assert "简历" in RESUME_SYSTEM.template
+        assert "ATS" in RESUME_SYSTEM.template
 
 
 class TestResumeNodeFallback:
@@ -30,12 +30,12 @@ class TestResumeNodeFallback:
 
 
 class TestWriteResume:
-    @patch("boss_career_ops.agent.tools.PipelineManager")
-    def test_write_resume_saves_to_pipeline(self, mock_pm_cls):
+    @patch("boss_career_ops.agent.tools._get_pm")
+    def test_write_resume_saves_to_pipeline(self, mock_get_pm):
         mock_pm = MagicMock()
         mock_pm.__enter__ = MagicMock(return_value=mock_pm)
         mock_pm.__exit__ = MagicMock(return_value=False)
-        mock_pm_cls.return_value = mock_pm
+        mock_get_pm.return_value = mock_pm
         write_resume("job1", "# 简历\n润色后内容")
         mock_pm.save_ai_result.assert_called_once()
         call_args = mock_pm.save_ai_result.call_args

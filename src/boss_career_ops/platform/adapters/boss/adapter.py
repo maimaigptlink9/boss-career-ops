@@ -67,7 +67,7 @@ class BossAdapter(PlatformAdapter):
         self._browser = BossBrowserAdapter(cdp_url=cdp_url, bridge_url=bridge_url)
 
     def search(self, params: dict[str, Any]) -> list[Job]:
-        resp = self._client.post("search", json_data=params)
+        resp = self._client.post("search", params=params)
         if resp.get("_risk_blocked"):
             return self._search_via_browser(params)
         if resp.get("code") != 0:

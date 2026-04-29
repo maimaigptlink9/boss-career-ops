@@ -12,18 +12,20 @@ import json
 logger = get_logger(__name__)
 
 
-def run_evaluate(target: str | None, from_search: bool):
+def run_evaluate(target: str | None, from_search: bool, pending: bool = False):
     engine = EvaluationEngine()
-    if from_search:
+    if pending:
+        _evaluate_pending(engine)
+    elif from_search:
         _evaluate_from_search(engine)
     elif target:
         _evaluate_single(engine, target)
     else:
         output_error(
             command="evaluate",
-            message="请指定评估目标或使用 --from-search",
+            message="请指定评估目标或使用 --from-search / --pending",
             code=ErrorCode.INVALID_PARAM,
-            hints={"next_actions": ["bco evaluate <security_id>", "bco evaluate --from-search"]},
+            hints={"next_actions": ["bco evaluate <security_id>", "bco evaluate --from-search", "bco evaluate --pending"]},
         )
 
 
@@ -124,3 +126,55 @@ def _evaluate_from_search(engine: EvaluationEngine):
         data=results,
         hints={"next_actions": ["bco auto-action", "bco pipeline"]},
     )
+
+
+def _evaluate_pending(engine: EvaluationEngine):
+    try:
+        pm = PipelineManager()
+        with pm:
+            pending_jobs = pm.get_unevaluated(limit=100)
+            if not pending_jobs:
+                output_json(
+                    command="evaluate",
+                    data={"message": "没有未评估的职位", "count": 0},
+                )
+                return
+            logger.info("待评估职位: %d 条", len(pending_jobs))
+            results = []
+            for job_dict in pending_jobs:
+                try:
+                    result = engine.evaluate(job_dict)
+                    job_id = job_dict.get("job_id", "")
+                    if job_id:
+                        try:
+                            ai_result = pm.get_ai_result(job_id, "evaluate")
+                            if ai_result:
+                                ai_data = json.loads(ai_result["result"])
+                                if ai_data.get("score") is not None and ai_data.get("grade"):
+                                    result["total_score"] = ai_data["score"]
+                                    result["grade"] = ai_data["grade"]
+                                    result["source"] = "agent"
+                                    result["agent_analysis"] = ai_data.get("analysis")
+                        except Exception as e:
+                            logger.warning("读取 Agent 评估结果失败: %s", e)
+                        pm.update_score(job_id, result["total_score"], result["grade"])
+                        pm.update_stage(job_id, Stage.EVALUATED)
+                        report = generate_report(result)
+                        pm.update_job_data(job_id, {"evaluate_report": report})
+                    results.append({
+                        "job_id": job_id,
+                        "job_name": job_dict.get("job_name", ""),
+                        "company_name": job_dict.get("company_name", ""),
+                        "score": result["total_score"],
+                        "grade": result["grade"],
+                        "recommendation": result.get("recommendation", ""),
+                    })
+                except Exception as e:
+                    logger.warning("评估职位 %s 失败: %s", job_dict.get("job_id", ""), e)
+            output_json(
+                command="evaluate",
+                data={"count": len(results), "results": results},
+                hints={"next_actions": ["bco pipeline list", "bco pipeline dismiss --grade D,E"]},
+            )
+    except Exception as e:
+        output_error(command="evaluate", message=str(e), code=ErrorCode.EVALUATE_ERROR)

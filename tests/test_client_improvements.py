@@ -119,6 +119,14 @@ class TestHandleRiskBlock:
         out = client._handle_risk_block(result, "search", None)
         assert out == browser_result
 
+    def test_passes_json_data_to_browser_fallback(self, client, mocker):
+        mocker.patch.object(client, "_request_via_browser", return_value={"code": 0})
+        result = {"code": 1, "message": "环境存在异常"}
+        client._handle_risk_block(result, "search", None, json_data={"query": "Python", "city": "101280600"})
+        client._request_via_browser.assert_called_once_with(
+            "search", None, json_data={"query": "Python", "city": "101280600"},
+        )
+
     def test_no_browser_fallback_for_unsupported_endpoint(self, client, mocker):
         mocker.patch.object(client, "_request_via_browser", return_value=None)
         result = {"code": 1, "message": "风控拦截"}
@@ -203,6 +211,21 @@ class TestRequestViaBrowser:
         call_args = client._browser_post.call_args
         assert call_args[0][0] == "/api/search?__zp_stoken__=tok123"
         assert call_args[0][1] == {"query": "python"}
+
+    def test_post_endpoint_uses_json_data_when_provided(self, client, mocker):
+        mocker.patch.object(client, "_get_cookies", return_value={"sid": "abc"})
+        mocker.patch.object(client, "_browser_post", return_value={"code": 0})
+        ep_mock = mocker.MagicMock()
+        ep_mock.method = "POST"
+        ep_mock.path = "/api/search"
+        mocker.patch.object(client._endpoints, "get", return_value=ep_mock)
+        result = client._request_via_browser(
+            "search", {"__zp_stoken__": "tok123"}, json_data={"query": "Python", "city": "101280600"},
+        )
+        assert result == {"code": 0}
+        call_args = client._browser_post.call_args
+        assert call_args[0][0] == "/api/search?__zp_stoken__=tok123"
+        assert call_args[0][1] == {"query": "Python", "city": "101280600"}
 
     def test_returns_none_when_no_cookies(self, client, mocker):
         mocker.patch.object(client, "_get_cookies", return_value={})

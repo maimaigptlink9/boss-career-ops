@@ -68,6 +68,7 @@ output/
 
 # 根目录临时脚本（agent 调试产物，禁止提交）
 /*.py
+release.bat
 check_*.py
 diagnose_*.py
 parse_pipeline.py

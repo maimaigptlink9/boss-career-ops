@@ -69,10 +69,11 @@ def recommend():
 @cli.command()
 @click.argument("target", required=False)
 @click.option("--from-search", is_flag=True, help="对上次搜索结果批量评估")
-def evaluate(target, from_search):
-    """5 维评估（单个/批量）"""
+@click.option("--pending", is_flag=True, help="评估所有未评估的历史职位")
+def evaluate(target, from_search, pending):
+    """5 维评估（单个/批量/未评估）"""
     from boss_career_ops.commands.evaluate import run_evaluate
-    run_evaluate(target, from_search)
+    run_evaluate(target, from_search, pending=pending)
 
 
 @cli.command()
@@ -146,11 +147,36 @@ def mark(security_id, tag):
     run_mark(security_id, tag)
 
 
-@cli.command()
+@cli.group()
 def pipeline():
-    """求职流水线"""
-    from boss_career_ops.commands.pipeline import run_pipeline
-    run_pipeline()
+    """求职流水线管理"""
+
+
+@pipeline.command("list")
+@click.option("--stage", default=None, help="按阶段筛选")
+@click.option("--status", "status_filter", default="active", help="按状态筛选（active/dismissed/all）")
+def pipeline_list(stage, status_filter):
+    """列出流水线中的职位"""
+    from boss_career_ops.commands.pipeline import run_pipeline_list
+    run_pipeline_list(stage=stage, status_filter=status_filter)
+
+
+@pipeline.command("dismiss")
+@click.argument("job_ids", nargs=-1, required=False)
+@click.option("--score-below", default=None, type=float, help="按评分阈值批量排除")
+@click.option("--grade", default=None, help="按等级批量排除（逗号分隔，如 D,E）")
+def pipeline_dismiss(job_ids, score_below, grade):
+    """排除不感兴趣的职位（软删除）"""
+    from boss_career_ops.commands.pipeline import run_pipeline_dismiss
+    run_pipeline_dismiss(job_ids=job_ids, score_below=score_below, grade=grade)
+
+
+@pipeline.command("restore")
+@click.argument("job_ids", nargs=-1, required=True)
+def pipeline_restore(job_ids):
+    """恢复已排除的职位"""
+    from boss_career_ops.commands.pipeline import run_pipeline_restore
+    run_pipeline_restore(job_ids=job_ids)
 
 
 @cli.command()

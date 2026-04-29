@@ -62,7 +62,7 @@ def test_import_all_commands():
     from boss_career_ops.commands.chat import run_chat
     from boss_career_ops.commands.chatmsg import run_chatmsg, run_chat_summary
     from boss_career_ops.commands.mark import run_mark
-    from boss_career_ops.commands.pipeline import run_pipeline
+    from boss_career_ops.commands.pipeline import run_pipeline_list, run_pipeline_dismiss, run_pipeline_restore
     from boss_career_ops.commands.export import run_export
     from boss_career_ops.commands.interview import run_interview
     from boss_career_ops.commands.dashboard import run_dashboard
@@ -90,7 +90,9 @@ def test_import_all_commands():
     assert run_chatmsg is not None
     assert run_chat_summary is not None
     assert run_mark is not None
-    assert run_pipeline is not None
+    assert run_pipeline_list is not None
+    assert run_pipeline_dismiss is not None
+    assert run_pipeline_restore is not None
     assert run_agent_evaluate is not None
     assert run_agent_save_evaluate is not None
     assert run_bridge_status is not None

@@ -196,6 +196,7 @@ class BossClient(metaclass=SingletonMeta):
         result: dict,
         endpoint_name: str,
         params: dict | None,
+        json_data: dict | None = None,
     ) -> dict:
         if not self._is_risk_blocked(result):
             return result
@@ -204,7 +205,7 @@ class BossClient(metaclass=SingletonMeta):
         if endpoint_name not in BROWSER_FALLBACK_ENDPOINTS:
             return result
         logger.info("风控拦截，尝试浏览器通道降级: %s", endpoint_name)
-        browser_result = self._request_via_browser(endpoint_name, params)
+        browser_result = self._request_via_browser(endpoint_name, params, json_data=json_data)
         if browser_result and browser_result.get("code") == 0:
             return browser_result
         logger.warning("浏览器通道降级也失败: %s", endpoint_name)
@@ -351,7 +352,7 @@ class BossClient(metaclass=SingletonMeta):
             logger.warning("浏览器 POST 通道降级异常: %s - %s", url, e)
             return None
 
-    def _request_via_browser(self, endpoint_name: str, params: dict | None = None) -> dict | None:
+    def _request_via_browser(self, endpoint_name: str, params: dict | None = None, json_data: dict | None = None) -> dict | None:
         if endpoint_name not in BROWSER_FALLBACK_ENDPOINTS:
             return None
         ep = self._endpoints.get(endpoint_name)
@@ -368,12 +369,14 @@ class BossClient(metaclass=SingletonMeta):
 
         stoken_val = ""
         body_params = {}
+        effective_data = json_data if json_data is not None else {}
         if params:
             for k, v in params.items():
                 if k == "__zp_stoken__":
                     stoken_val = str(v)
-                else:
+                elif k not in effective_data:
                     body_params[k] = v
+        body_params.update(effective_data)
         fetch_url = api_path
         if stoken_val:
             fetch_url = f"{api_path}?__zp_stoken__={stoken_val}"
@@ -429,7 +432,7 @@ class BossClient(metaclass=SingletonMeta):
                 time.sleep(retry_info["backoff"])
                 continue
 
-            result = self._handle_risk_block(result, endpoint_name, params)
+            result = self._handle_risk_block(result, endpoint_name, params, json_data=json_data)
             self._rate_limit_count = 0
             return result
 

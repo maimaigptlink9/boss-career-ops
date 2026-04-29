@@ -8,14 +8,15 @@ BOSS 直聘 AI 求职全流程 CLI 工具。覆盖从职位搜索到拿到 offer
 
 ## 功能概览
 
-- **职位搜索** — 关键词 + 城市 + 福利多维筛选
-- **5 维评估** — 匹配度、薪资、地点、发展、团队自动评分
+- **职位搜索** — 关键词 + 城市 + 福利多维筛选，搜索缓存减少 API 调用
+- **5 维评估** — 匹配度、薪资、地点、发展、团队自动评分，全行业同义词表，匹配/不匹配原因输出
 - **阈值驱动** — batch-greet 内置阈值逻辑，B 级自动打招呼，D 级自动跳过
-- **简历定制** — 根据职位 JD 生成 ATS 友好的 MD/PDF 简历
-- **批量打招呼** — 高斯随机延迟，最大 10 个，防封号
-- **聊天管理** — 消息历史、摘要、标签、导出
+- **简历定制** — 根据职位 JD 生成 ATS 友好的 MD/PDF 简历，关键词注入
+- **批量打招呼** — 高斯随机延迟 + 随机长停顿，最大 10 个，防封号
+- **聊天管理** — 消息历史、AI 摘要、标签、导出
 - **求职流水线** — 发现→评估→投递→沟通→面试→offer 全程追踪，所有操作结果自动入库
 - **面试准备** — 基于职位信息生成面试要点
+- **Web 仪表盘** — AI 求职决策仪表盘，5 维评分可视化、Pipeline 看板、AI 助手、零配置可用
 - **TUI Dashboard** — 终端可视化求职看板
 
 ## 快速开始
@@ -54,7 +55,7 @@ bco doctor
 # 2. 首次使用，初始化配置
 bco setup
 
-# 3. 登录 BOSS 直聘（自动检测 Chrome Profile，3 级降级）
+# 3. 登录 BOSS 直聘（自动检测 Chrome Profile，4 级降级）
 bco login
 
 # 4. 确认登录态
@@ -78,6 +79,9 @@ bco resume <job_id> --format pdf
 
 # 查看求职流水线
 bco pipeline
+
+# 启动 Web 仪表盘（零配置可用，规则引擎开箱即用）
+bco web
 ```
 
 ## 评估引擎
@@ -86,11 +90,20 @@ bco pipeline
 
 | 维度 | 权重 | 评估内容 |
 |------|------|----------|
-| 匹配度 | 30% | 技能、经验、学历与 JD 的匹配程度 |
-| 薪资 | 25% | 薪资范围与预期的对比，行业竞争力 |
-| 地点 | 15% | 通勤距离、城市偏好、远程可能性 |
-| 发展 | 15% | 职业成长空间、技术栈前瞻性、团队规模 |
-| 团队 | 15% | 公司阶段、团队文化、面试反馈信号 |
+| 匹配度 | 30% | 技能、经验、学历与 JD 的匹配程度（全行业同义词表 ~100 组） |
+| 薪资 | 25% | 薪资范围与预期的对比，连续评分（非阶梯跳变） |
+| 地点 | 15% | 城市偏好、邻近城市支持、远程可能性 |
+| 发展 | 15% | 职业成长空间（按岗位类型选关键词：技术/产品/运营/市场/设计/数据/管理） |
+| 团队 | 15% | 公司阶段、团队文化（按岗位类型选关键词） |
+
+### 评分改进
+
+- **评分区分度提升**：发展/团队基准分从 3.0 降至 1.5，解决评分集中在 C 级的问题
+- **全行业同义词表**：覆盖技术/产品/运营/市场/设计/数据/财务/人力/销售/内容/电商/法务/行政/通用共 ~100 组
+- **匹配原因输出**：每个评估结果包含 `match_reasons`（优势）和 `mismatch_reasons`（不足）
+- **信息不足标记**：搜索结果缺 description 时标记 `confidence: "preliminary"`，提示查看详情后评分可能变化
+- **薪资连续评分**：用连续函数替代阶梯跳变，5K 差距不再导致 1.0 分跳变
+- **邻近城市支持**：广州→深圳 3.5 分（而非 2.0），北京→天津同理
 
 ### 评分等级与自动动作
 
@@ -110,7 +123,8 @@ bco pipeline
 |------|------|
 | `bco doctor` | 环境诊断 |
 | `bco setup` | 初始化配置（首次使用） |
-| `bco login` | 登录（3 级降级：Bridge Cookie→CDP→patchright），支持 `--profile` 指定 Chrome 配置文件 |
+| `bco login` | 登录（4 级降级：Bridge Cookie→CDP→QR httpx→patchright），支持 `--profile` 指定 Chrome 配置文件 |
+| `bco logout` | 清除本地登录态 |
 | `bco status` | 检查登录态 |
 | `bco bridge status` | 查看 Bridge Daemon 状态 |
 | `bco bridge test` | Bridge 连通性诊断（3 步检查） |
@@ -150,6 +164,7 @@ bco pipeline
 | `bco search <keyword> --city <city> --welfare <welfare>` | 搜索职位 + 福利筛选 |
 | `bco recommend` | 个性化推荐 |
 | `bco evaluate [target]` 或 `--from-search` | 5 维评估 |
+| `bco detail <security_id>` | 查看职位完整详情（双通道降级） |
 
 ### 投递与沟通
 
@@ -184,6 +199,7 @@ bco pipeline
 |------|------|
 | `bco interview <job_id>` | 面试准备 |
 | `bco dashboard` | 启动 TUI Dashboard |
+| `bco web` | 启动 Web 仪表盘（AI 求职决策仪表盘，零配置可用） |
 
 ## 配置
 
@@ -242,6 +258,15 @@ cache:
 
 本工具专为 AI Agent 设计，AI 任务由 Agent 直接完成，无需配置外部 LLM API。
 
+### 零配置可用
+
+系统采用「规则引擎开箱即用 + AI 无缝升级」策略：
+
+- **不配置 AI** → 规则引擎模式：5 维评分、A/B/C/D/F 等级、推荐语、技能同义词匹配、ATS 关键词注入、Pipeline 看板，覆盖 80% 核心价值
+- **配置 AI** → AI 增强模式：AI 评估覆盖规则评分、AI 简历润色、AI 聊天摘要、AI 回复建议、AI 面试准备
+
+AI 配置支持 Web 设置页（30 秒完成）和环境变量两种方式，优先级：环境变量 > ai_config.yml > 规则引擎。
+
 ### 工作原理
 
 ```
@@ -276,13 +301,41 @@ mkdir -p ~/.openclaw/skills/boss-career-ops && cp skills/boss-career-ops/skill.m
 cp skills/boss-career-ops/skill.md ~/.workbuddy/skills/boss-career-ops/skill.md
 ```
 
+## Web 仪表盘
+
+`bco web` 启动 AI 求职决策仪表盘（FastAPI + Alpine.js），定位是 AI 智能层的可视化，不是 BOSS 网页的复刻。
+
+### 核心页面
+
+| 页面 | 功能 | BOSS 网页可替代 |
+|------|------|-----------------|
+| 决策看板 | Pipeline 看板 + 5 维评分卡片 + 优劣势分析 + 待办 | ❌ |
+| AI 助手 | 回复建议 + 简历定制 + 面试准备 + 技能差距 | ❌ |
+| 设置 | AI Key 配置引导 + 个人档案编辑 | ❌ |
+
+### 技术架构
+
+```
+浏览器 → FastAPI (web/server.py) → agent/tools.py → PipelineManager / BossAdapter / EvaluationEngine
+```
+
+- 后端：FastAPI，所有业务逻辑通过 `agent/tools.py` 调用
+- 前端：Alpine.js (CDN) + 原生 JS，暗色主题，无构建工具
+- AI 配置：Web 设置页配置 API Key，Provider 信息从 `data/llm_providers.yml` 读取
+- 安全：默认绑定 `127.0.0.1`，API Key Fernet 加密存储，写操作需认证
+
 ## 安全说明
 
 - Token 使用 Fernet 加密存储（PBKDF2 密钥派生，绑定机器+用户）
-- 请求间隔使用高斯随机延迟，模拟人类行为
+- API Key 使用 Fernet 加密存储（Web 设置页保存时加密）
+- 请求间隔使用高斯随机延迟 + 5% 概率随机长停顿，模拟人类行为
+- 浏览器通道共享节流器，防止降级后请求密度失控
+- Cookie 回写机制，捕获服务端 Set-Cookie 更新
+- Token 自动刷新（stoken 过期时 CDP 优先刷新）
 - 批量操作内置上限（batch-greet 最大 10 个）
 - 敏感信息不输出到日志
 - CSV 导出防止公式注入，文件导出防止路径遍历
+- Web 仪表盘默认绑定 `127.0.0.1`，写操作需 `BCO_WEB_API_KEY` 认证
 
 ## 系统升级路线图
 
@@ -295,6 +348,17 @@ cp skills/boss-career-ops/skill.md ~/.workbuddy/skills/boss-career-ops/skill.md
 | LangGraph 多Agent编排 | ✅ 已完成 | Agent I/O 数据通道 → StateGraph + Conditional Edge 路由，6 个专业 Agent 节点 | [upgrade-langgraph.md](doc/upgrade-langgraph.md) |
 | RAG 知识库 | ✅ 已完成 | 关键词匹配 → ChromaDB 语义向量检索 + MMR 重排 | [upgrade-rag.md](doc/upgrade-rag.md) |
 | MCP Server | ✅ 已完成 | CLI 命令行 → MCP 协议（JSON-RPC over stdio），9 Tool + 3 Resource | [upgrade-mcp.md](doc/upgrade-mcp.md) |
+| 规则引擎评估改进 | ✅ 已完成 | 评分区分度提升、全行业同义词表、匹配原因输出、薪资连续评分、邻近城市 | [规则引擎评估改进方案.md](doc/规则引擎评估改进方案.md) |
+| Web 仪表盘 | ✅ 已完成 | AI 求职决策仪表盘，5 维评分可视化、Pipeline 看板、AI 助手、零配置可用 | [Web前端方案.md](doc/Web前端方案.md) |
+| Web 与 CLI 对齐 | ✅ 已完成 | agent/tools.py 增强，Pipeline 阶段推进、搜索入库、简历 PDF 生成修复 | [web-cli-alignment.md](doc/web-cli-alignment.md) |
+| 风控对抗增强 | ✅ 已完成 | QR httpx 登录、浏览器通道节流、随机长停顿、Cookie 回写、Token 自动刷新 | [风控对抗实现对比分析.md](doc/风控对抗实现对比分析.md) |
+
+### 进行中改进
+
+| 改造 | 状态 | 核心变化 | 详细文档 |
+|------|------|----------|----------|
+| Web 功能补全 | 🔄 进行中 | 搜索页面、投递按钮、聊天页面、简历预览、面试准备、数据分析 | [web-completion-plan.md](doc/web-completion-plan.md) |
+| 功能广度补全 | 🔄 进行中 | detail 命令、搜索缓存、登出、搜索预设/监控、日报/跟进 | [功能对比分析.md](doc/功能对比分析.md) |
 
 ### 新增依赖
 
@@ -308,6 +372,8 @@ cp skills/boss-career-ops/skill.md ~/.workbuddy/skills/boss-career-ops/skill.md
 | `BCO_LLM_API_KEY` | API Key | — |
 | `BCO_LLM_BASE_URL` | API Base URL（兼容 OpenAI 接口） | — |
 | `BCO_LLM_MODEL` | 模型名 | deepseek-chat |
+
+也可通过 Web 设置页（`bco web` → 设置 → AI 配置）配置，API Key 加密存储到 `~/.bco/ai_config.yml`。优先级：环境变量 > ai_config.yml > 规则引擎。
 
 ### Claude Desktop 集成
 

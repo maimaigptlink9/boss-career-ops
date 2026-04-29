@@ -21,8 +21,8 @@ class TestGapAnalysisWithLlm:
         mock_llm.invoke.return_value = response
         mock_get_llm.return_value = mock_llm
         from boss_career_ops.agent.prompts import GAP_ANALYSIS_SYSTEM
-        assert "missing_skills" in GAP_ANALYSIS_SYSTEM
-        assert "priority" in GAP_ANALYSIS_SYSTEM
+        assert "missing_skills" in GAP_ANALYSIS_SYSTEM.template
+        assert "priority" in GAP_ANALYSIS_SYSTEM.template
 
 
 class TestGapAnalysisWithoutLlm:

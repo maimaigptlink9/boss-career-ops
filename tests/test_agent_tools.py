@@ -148,7 +148,7 @@ class TestListPipelineJobs:
         mock_pm.list_jobs.return_value = [{"job_id": "job1"}]
         mock_pm_cls.return_value = mock_pm
         result = list_pipeline_jobs(stage="评估")
-        mock_pm.list_jobs.assert_called_once_with(stage="评估")
+        mock_pm.list_jobs.assert_called_once_with(stage="评估", status=None)
 
 
 class TestGetJobWithAiResult:
@@ -234,15 +234,18 @@ class TestWriteInterviewPrep:
 class TestSearchJobs:
     @patch("boss_career_ops.agent.tools.get_active_adapter")
     def test_search_jobs_returns_results(self, mock_adapter_fn):
+        from boss_career_ops.platform.models import Job
+
         mock_adapter = MagicMock()
-        job1 = MagicMock()
-        job1.job_id = "job1"
-        job1.job_name = "Python开发"
-        job1.company_name = "公司A"
-        job1.city = "深圳"
-        job1.salary_desc = "20K-40K"
-        job1.skills = ["Python"]
-        job1.security_id = "sec1"
+        job1 = Job(
+            job_id="job1",
+            job_name="Python开发",
+            company_name="公司A",
+            city_name="深圳",
+            salary_desc="20K-40K",
+            skills=["Python"],
+            security_id="sec1",
+        )
         mock_adapter.search.return_value = [job1]
         mock_adapter.build_search_params.return_value = {"keyword": "Python", "city": ""}
         mock_adapter_fn.return_value = mock_adapter
@@ -250,6 +253,7 @@ class TestSearchJobs:
         assert len(result) == 1
         assert result[0]["job_id"] == "job1"
         assert result[0]["job_name"] == "Python开发"
+        assert result[0]["city"] == "深圳"
 
     @patch("boss_career_ops.agent.tools.get_active_adapter")
     def test_search_jobs_adapter_error(self, mock_adapter_fn):
@@ -324,18 +328,30 @@ class TestAnalyzeSkillGap:
 
 class TestPrepareInterview:
     @patch("boss_career_ops.agent.tools.PipelineManager")
-    def test_prepare_interview_existing_job(self, mock_pm_cls):
+    def test_prepare_interview_existing_job_no_agent(self, mock_pm_cls):
         mock_pm = MagicMock()
         mock_pm.__enter__ = MagicMock(return_value=mock_pm)
         mock_pm.__exit__ = MagicMock(return_value=False)
         mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发", "company_name": "公司A"}
         mock_pm.get_ai_results.return_value = []
+        mock_pm.get_ai_result.return_value = None
+        mock_pm_cls.return_value = mock_pm
+        result = prepare_interview("job1")
+        assert result.ok is False
+        assert result.code == "AI_RESULT_NOT_FOUND"
+
+    @patch("boss_career_ops.agent.tools.PipelineManager")
+    def test_prepare_interview_existing_job_with_agent(self, mock_pm_cls):
+        mock_pm = MagicMock()
+        mock_pm.__enter__ = MagicMock(return_value=mock_pm)
+        mock_pm.__exit__ = MagicMock(return_value=False)
+        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发", "company_name": "公司A"}
+        mock_pm.get_ai_results.return_value = [{"task_type": "interview_prep", "result": '{"questions": ["Q1"], "source": "agent"}'}]
+        mock_pm.get_ai_result.return_value = {"task_type": "interview_prep", "result": '{"questions": ["Q1"]}'}
         mock_pm_cls.return_value = mock_pm
         result = prepare_interview("job1")
         assert result.ok is True
-        assert result.data["job_id"] == "job1"
-        assert result.data["job_name"] == "Python开发"
-        assert result.data["analysis_available"] is True
+        assert result.data["source"] == "agent"
 
     @patch("boss_career_ops.agent.tools.PipelineManager")
     def test_prepare_interview_nonexistent_job(self, mock_pm_cls):

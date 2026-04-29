@@ -15,14 +15,22 @@ PROVIDERS_FILE = Path(__file__).parent.parent / "data" / "llm_providers.yml"
 def get_ai_config() -> dict:
     provider = os.environ.get("BCO_LLM_PROVIDER", "")
     api_key = os.environ.get("BCO_LLM_API_KEY", "")
+    base_url_env = os.environ.get("BCO_LLM_BASE_URL", "")
+    model_env = os.environ.get("BCO_LLM_MODEL", "")
     if provider and api_key:
-        return {"provider": provider, "api_key": api_key, "source": "env"}
+        return {
+            "provider": provider,
+            "api_key": api_key,
+            "base_url": base_url_env,
+            "model": model_env,
+            "source": "env",
+        }
     if AI_CONFIG_FILE.exists():
         try:
             config = yaml.safe_load(AI_CONFIG_FILE.read_text(encoding="utf-8")) or {}
         except Exception as e:
             logger.error("读取 AI 配置失败: %s", e)
-            return {"provider": "", "api_key": "", "source": "none"}
+            return {"provider": "", "api_key": "", "base_url": "", "model": "", "source": "none"}
         encrypted_key = config.get("api_key_encrypted", "")
         api_key = ""
         if encrypted_key:
@@ -35,19 +43,25 @@ def get_ai_config() -> dict:
         return {
             "provider": config.get("provider", "deepseek"),
             "api_key": api_key,
+            "base_url": config.get("base_url", ""),
+            "model": config.get("model", ""),
             "source": "file",
         }
-    return {"provider": "", "api_key": "", "source": "none"}
+    return {"provider": "", "api_key": "", "base_url": "", "model": "", "source": "none"}
 
 
-def save_ai_config(provider: str, api_key: str):
+def save_ai_config(provider: str, api_key: str, base_url: str = "", model: str = ""):
     from boss_career_ops.boss.auth.token_store import TokenStore
     store = TokenStore()
     encrypted = store.fernet.encrypt(api_key.encode()).decode()
     config = {"provider": provider, "api_key_encrypted": encrypted}
+    if base_url:
+        config["base_url"] = base_url
+    if model:
+        config["model"] = model
     AI_CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
     AI_CONFIG_FILE.write_text(yaml.dump(config, allow_unicode=True), encoding="utf-8")
-    logger.info("AI 配置已保存: provider=%s", provider)
+    logger.info("AI 配置已保存: provider=%s, base_url=%s, model=%s", provider, base_url or "(默认)", model or "(默认)")
 
 
 def get_ai_status() -> dict:

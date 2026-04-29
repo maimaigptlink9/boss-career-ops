@@ -14,7 +14,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [1/4] Sync dependencies (including web extras)...
+echo [1/3] Sync dependencies (including web extras)...
 uv sync --extra web
 if %errorlevel% neq 0 (
     echo [ERROR] Dependency sync failed.
@@ -24,27 +24,15 @@ if %errorlevel% neq 0 (
 echo       Done.
 echo.
 
-echo [2/4] Running diagnostics...
+echo [2/3] Running diagnostics...
 uv run bco doctor
 echo.
 
-echo [3/4] Starting Web backend (http://127.0.0.1:8080) ...
-start "BCO Web" cmd /c "uv run bco web"
-echo       Web backend started in new window.
-echo.
-
-echo [4/4] Starting TUI Dashboard...
-echo       Closing this window will stop all services.
+echo [3/3] Starting Web backend (http://127.0.0.1:8080) ...
 echo.
 echo ------------------------------------------
 echo   Web Dashboard: http://127.0.0.1:8080
-echo   Press Ctrl+C to exit Dashboard
+echo   Press Ctrl+C to stop
 echo ------------------------------------------
 echo.
-uv run bco dashboard
-
-echo.
-echo Dashboard closed. Stopping Web backend...
-taskkill /fi "WINDOWTITLE eq BCO Web" >nul 2>&1
-echo All services stopped.
-pause
+uv run bco web
