@@ -22,12 +22,16 @@ _PIPELINE_COLS = [
     "data", "created_at", "updated_at",
 ]
 
+_PIPELINE_SELECT = ", ".join(_PIPELINE_COLS)
+
 STATUS_ACTIVE = "active"
 STATUS_DISMISSED = "dismissed"
 
 _AI_RESULT_COLS = [
     "id", "job_id", "task_type", "result", "source", "created_at",
 ]
+
+_AI_RESULT_SELECT = ", ".join(_AI_RESULT_COLS)
 
 _DB_LOCK_RETRIES = 3
 _DB_LOCK_DELAY = 0.05
@@ -139,10 +143,10 @@ class PipelineManager(metaclass=SingletonMeta):
             """)
             conn.commit()
             try:
+                conn.execute("SELECT status FROM pipeline LIMIT 1")
+            except sqlite3.OperationalError:
                 conn.execute("ALTER TABLE pipeline ADD COLUMN status TEXT NOT NULL DEFAULT 'active'")
                 conn.commit()
-            except sqlite3.OperationalError:
-                pass
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS ai_results (
                     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -276,7 +280,7 @@ class PipelineManager(metaclass=SingletonMeta):
     def get_job(self, job_id: str) -> dict | None:
         if not self._conn:
             raise RuntimeError("PipelineManager 未打开")
-        cursor = self._db_execute("SELECT * FROM pipeline WHERE job_id = ?", (job_id,))
+        cursor = self._db_execute(f"SELECT {_PIPELINE_SELECT} FROM pipeline WHERE job_id = ?", (job_id,))
         row = cursor.fetchone()
         if not row:
             return None
@@ -294,14 +298,14 @@ class PipelineManager(metaclass=SingletonMeta):
             conditions.append("status = ?")
             params.append(status)
         where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
-        cursor = self._db_execute(f"SELECT * FROM pipeline{where} ORDER BY updated_at DESC", params)
+        cursor = self._db_execute(f"SELECT {_PIPELINE_SELECT} FROM pipeline{where} ORDER BY updated_at DESC", params)
         return [dict(zip(_PIPELINE_COLS, row)) for row in cursor.fetchall()]
 
     def get_stale_jobs(self, days: int = 3) -> list[dict]:
         if not self._conn:
             raise RuntimeError("PipelineManager 未打开")
         cutoff = time.time() - days * 86400
-        cursor = self._db_execute("SELECT * FROM pipeline WHERE status = ? AND updated_at < ? AND stage != 'offer' ORDER BY updated_at ASC", (STATUS_ACTIVE, cutoff))
+        cursor = self._db_execute(f"SELECT {_PIPELINE_SELECT} FROM pipeline WHERE status = ? AND updated_at < ? AND stage != 'offer' ORDER BY updated_at ASC", (STATUS_ACTIVE, cutoff))
         return [dict(zip(_PIPELINE_COLS, row)) for row in cursor.fetchall()]
 
     def get_daily_summary(self) -> dict:
@@ -440,7 +444,7 @@ class PipelineManager(metaclass=SingletonMeta):
         if not self._conn:
             raise RuntimeError("PipelineManager 未打开")
         cursor = self._db_execute(
-            "SELECT * FROM pipeline WHERE status = ? AND stage = ? ORDER BY created_at DESC LIMIT ?",
+            f"SELECT {_PIPELINE_SELECT} FROM pipeline WHERE status = ? AND stage = ? ORDER BY created_at DESC LIMIT ?",
             (STATUS_ACTIVE, Stage.DISCOVERED.value, limit),
         )
         return [dict(zip(_PIPELINE_COLS, row)) for row in cursor.fetchall()]

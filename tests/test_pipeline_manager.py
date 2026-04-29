@@ -285,3 +285,64 @@ class TestColumnConstants:
             pipeline_manager.save_ai_result("j1", "evaluate", '{"score": 80}')
             result = pipeline_manager.get_ai_result("j1", "evaluate")
             assert list(result.keys()) == _AI_RESULT_COLS
+
+
+class TestSchemaMigration:
+    def test_new_db_has_status_column(self, tmp_dir):
+        db = tmp_dir / "test_new.db"
+        with PipelineManager(db) as pm:
+            pm.upsert_job("job1", job_name="测试")
+            job = pm.get_job("job1")
+            assert job["status"] == "active"
+
+    def test_legacy_db_migration_adds_status(self, tmp_dir):
+        import sqlite3 as sq3
+
+        db = tmp_dir / "legacy.db"
+        conn = sq3.connect(str(db))
+        conn.execute("""
+            CREATE TABLE pipeline (
+                job_id TEXT PRIMARY KEY,
+                job_name TEXT DEFAULT '',
+                company_name TEXT DEFAULT '',
+                salary_desc TEXT DEFAULT '',
+                stage TEXT NOT NULL DEFAULT '发现',
+                score REAL DEFAULT 0.0,
+                grade TEXT DEFAULT '',
+                security_id TEXT DEFAULT '',
+                data TEXT DEFAULT '{}',
+                created_at REAL NOT NULL,
+                updated_at REAL NOT NULL
+            )
+        """)
+        conn.execute(
+            "INSERT INTO pipeline (job_id, stage, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            ("legacy1", "发现", 1000.0, 1000.0),
+        )
+        conn.commit()
+        conn.close()
+
+        with PipelineManager(db) as pm:
+            pm.upsert_job("new1", job_name="新职位")
+            new_job = pm.get_job("new1")
+            assert new_job["status"] == "active"
+            legacy_job = pm.get_job("legacy1")
+            assert legacy_job is not None
+            assert legacy_job["status"] == "active"
+
+    def test_repeated_init_schema_no_error(self, tmp_dir):
+        db = tmp_dir / "test_repeat.db"
+        with PipelineManager(db) as pm:
+            pm._schema_initialized = False
+            pm._init_schema()
+            pm._schema_initialized = False
+            pm._init_schema()
+            pm.upsert_job("job1")
+            assert pm.get_job("job1") is not None
+
+    def test_status_index_created(self, tmp_dir):
+        db = tmp_dir / "test_idx.db"
+        with PipelineManager(db) as pm:
+            cursor = pm._conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
+            index_names = {row[0] for row in cursor.fetchall()}
+        assert "idx_pipeline_status" in index_names
