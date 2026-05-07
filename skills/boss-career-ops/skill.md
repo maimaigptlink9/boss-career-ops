@@ -1,8 +1,9 @@
----
+***
+
 name: "boss-career-ops"
-skill_version: "0.7.0"
+skill\_version: "0.9.0"
 description: "BOSS直聘AI求职全流程CLI工具，覆盖搜索/评估/投递/沟通/面试闭环。Agent直接编排AI任务（评估/润色/摘要/面试准备），无需外部API。零配置可用（规则引擎开箱即用），AI无缝升级。Invoke when user asks about job search, BOSS直聘, 职位搜索, 投递, 打招呼, 面试, or any job-hunting operations."
----
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Boss-Career-Ops Skill
 
@@ -15,10 +16,10 @@ AI 任务（评估/润色/摘要/面试准备）由 Agent 直接完成，无需�
 
 ## 全局选项
 
-| 选项 | 说明 |
-|------|------|
+| 选项              | 说明    |
+| --------------- | ----- |
 | `bco --version` | 查看版本号 |
-| `bco --help` | 查看帮助 |
+| `bco --help`    | 查看帮助  |
 
 ## 会话启动流程
 
@@ -114,7 +115,8 @@ bco status
 - `~/.bco/cv.md` — 填写完整简历内容（Markdown 格式）
 
 **未配置档案的后果**：
-- `evaluate`：4/5 维度退化为固定中低分（2.5~3.0），评估结果无区分度
+
+- `evaluate`：4/5 维度退化为固定中低分（2.5\~3.0），评估结果无区分度
 - `recommend`：不传城市和关键词参数，返回与用户意向无关的默认推荐
 - `resume`：回退到规则逻辑（关键词追加），无法使用 AI 润色
 
@@ -150,18 +152,18 @@ bco status
 
 ## 评估引擎：5 维评分体系
 
-| 维度 | 权重 | 评估内容 |
-|------|------|----------|
-| 匹配度 | 30% | 技能、经验、学历与 JD 的匹配程度（全行业同义词表 ~100 组） |
-| 薪资 | 25% | 薪资范围与预期的对比，连续评分（非阶梯跳变） |
-| 地点 | 15% | 城市偏好、邻近城市支持、远程可能性 |
-| 发展 | 15% | 职业成长空间（按岗位类型选关键词：技术/产品/运营/市场/设计/数据/管理） |
-| 团队 | 15% | 公司阶段、团队文化（按岗位类型选关键词） |
+| 维度  | 权重  | 评估内容                                   |
+| --- | --- | -------------------------------------- |
+| 匹配度 | 30% | 技能、经验、学历与 JD 的匹配程度（全行业同义词表 \~100 组）    |
+| 薪资  | 25% | 薪资范围与预期的对比，连续评分（非阶梯跳变）                 |
+| 地点  | 15% | 城市偏好、邻近城市支持、远程可能性                      |
+| 发展  | 15% | 职业成长空间（按岗位类型选关键词：技术/产品/运营/市场/设计/数据/管理） |
+| 团队  | 15% | 公司阶段、团队文化（按岗位类型选关键词）                   |
 
 ### 评分改进
 
 - **评分区分度提升**：发展/团队基准分从 3.0 降至 1.5，解决评分集中在 C 级的问题
-- **全行业同义词表**：覆盖技术/产品/运营/市场/设计/数据/财务/人力/销售/内容/电商/法务/行政/通用共 ~100 组
+- **全行业同义词表**：覆盖技术/产品/运营/市场/设计/数据/财务/人力/销售/内容/电商/法务/行政/通用共 \~100 组
 - **匹配原因输出**：每个评估结果包含 `match_reasons`（优势）和 `mismatch_reasons`（不足）
 - **信息不足标记**：搜索结果缺 description 时标记 `confidence: "preliminary"`，提示查看详情后评分可能变化
 - **薪资连续评分**：用连续函数替代阶梯跳变
@@ -169,13 +171,13 @@ bco status
 
 ### 评分等级
 
-| 等级 | 分数 | 含义 | 自动动作 |
-|------|------|------|----------|
-| A | 4.5-5.0 | 强烈推荐，立即行动 | 自动投递 |
-| B | 3.5-4.4 | 值得投入，优先处理 | 自动打招呼 |
-| C | 2.5-3.4 | 一般，需人工判断 | 需确认 |
-| D | 1.5-2.4 | 不太匹配，谨慎考虑 | 需确认 |
-| F | 0.0-1.4 | 不推荐 | 跳过 |
+| 等级 | 分数      | 含义        | 自动动作  |
+| -- | ------- | --------- | ----- |
+| A  | 4.5-5.0 | 强烈推荐，立即行动 | 自动投递  |
+| B  | 3.5-4.4 | 值得投入，优先处理 | 自动打招呼 |
+| C  | 2.5-3.4 | 一般，需人工判断  | 需确认   |
+| D  | 1.5-2.4 | 不太匹配，谨慎考虑 | 需确认   |
+| F  | 0.0-1.4 | 不推荐       | 跳过    |
 
 ## 核心工作流
 
@@ -198,6 +200,7 @@ bco status
 未配置 AI 时，规则引擎功能（评分、Pipeline 看板）始终可用。AI 助手页面显示引导提示 + "去设置"按钮。
 
 配置方式：
+
 1. Web 设置页：`bco web` → 设置 → AI 配置 → 选择 Provider → 粘贴 API Key → 保存
 2. 环境变量：`BCO_LLM_API_KEY` + `BCO_LLM_PROVIDER`
 
@@ -249,130 +252,130 @@ Agent:
 
 ### 环境与认证
 
-| 命令 | 说明 | 用法 |
-|------|------|------|
-| `bco doctor` | 环境诊断 | `bco doctor` |
-| `bco setup` | 初始化配置（首次使用） | `bco setup` |
-| `bco login` | 登录（4级降级：Bridge Cookie→CDP→QR httpx→patchright） | `bco login` 或 `bco login --profile <目录名>` |
-| `bco logout` | 清除本地登录态 | `bco logout` |
-| `bco status` | 检查登录态 | `bco status` |
-| `bco bridge` | Bridge Daemon 管理 | 见下方子命令 |
-| `bco skill-update` | 检查远程版本并获取最新 skill.md 内容 | `bco skill-update --check` 或 `bco skill-update` |
+| 命令                 | 说明                                             | 用法                                              |
+| ------------------ | ---------------------------------------------- | ----------------------------------------------- |
+| `bco doctor`       | 环境诊断                                           | `bco doctor`                                    |
+| `bco setup`        | 初始化配置（首次使用）                                    | `bco setup`                                     |
+| `bco login`        | 登录（4级降级：Bridge Cookie→CDP→QR httpx→patchright） | `bco login` 或 `bco login --profile <目录名>`       |
+| `bco logout`       | 清除本地登录态                                        | `bco logout`                                    |
+| `bco status`       | 检查登录态                                          | `bco status`                                    |
+| `bco bridge`       | Bridge Daemon 管理                               | 见下方子命令                                          |
+| `bco skill-update` | 检查远程版本并获取最新 skill.md 内容                        | `bco skill-update --check` 或 `bco skill-update` |
 
 ### Agent AI 任务
 
-| 命令 | 说明 | 用法 |
-|------|------|------|
-| `bco agent-evaluate` | 输出职位数据供 Agent 评估 | `bco agent-evaluate <job_id>` 或 `bco agent-evaluate --stage 发现 --limit 10` |
-| `bco agent-save` | 保存 Agent AI 结果到数据库 | 见下方子命令 |
+| 命令                   | 说明                 | 用法                                                                         |
+| -------------------- | ------------------ | -------------------------------------------------------------------------- |
+| `bco agent-evaluate` | 输出职位数据供 Agent 评估   | `bco agent-evaluate <job_id>` 或 `bco agent-evaluate --stage 发现 --limit 10` |
+| `bco agent-save`     | 保存 Agent AI 结果到数据库 | 见下方子命令                                                                     |
 
 #### bridge 子命令
 
-| 子命令 | 说明 | 用法 |
-|--------|------|------|
+| 子命令             | 说明                  | 用法                  |
+| --------------- | ------------------- | ------------------- |
 | `bridge status` | 查看 Bridge Daemon 状态 | `bco bridge status` |
-| `bridge test` | Bridge 连通性诊断（3 步检查） | `bco bridge test` |
+| `bridge test`   | Bridge 连通性诊断（3 步检查） | `bco bridge test`   |
 
 - `bridge status` 输出：Daemon 是否运行、Chrome 扩展连接数、上次 Cookie 获取时间及有效性
-- `bridge test` 按步骤诊断：[1/3] Daemon 连通性 → [2/3] Chrome 扩展连接 → [3/3] Cookie 获取
+- `bridge test` 按步骤诊断：\[1/3] Daemon 连通性 → \[2/3] Chrome 扩展连接 → \[3/3] Cookie 获取
 - 每步失败时停止并输出具体原因和恢复提示
 
 #### agent-save 子命令
 
-| 子命令 | 说明 | 用法 |
-|--------|------|------|
-| `evaluate` | 保存评估结果 | `bco agent-save evaluate --job-id <id> --score 4.2 --grade B --analysis "..."` |
-| `resume` | 保存简历润色结果 | `bco agent-save resume --job-id <id> --content "# 简历\n..."` |
-| `chat-summary` | 保存聊天摘要 | `bco agent-save chat-summary --security-id <id> --data '{"summary":"..."}'` |
-| `interview-prep` | 保存面试准备 | `bco agent-save interview-prep --job-id <id> --data '{"tech_questions":[...]}'` |
+| 子命令              | 说明       | 用法                                                                              |
+| ---------------- | -------- | ------------------------------------------------------------------------------- |
+| `evaluate`       | 保存评估结果   | `bco agent-save evaluate --job-id <id> --score 4.2 --grade B --analysis "..."`  |
+| `resume`         | 保存简历润色结果 | `bco agent-save resume --job-id <id> --content "# 简历\n..."`                     |
+| `chat-summary`   | 保存聊天摘要   | `bco agent-save chat-summary --security-id <id> --data '{"summary":"..."}'`     |
+| `interview-prep` | 保存面试准备   | `bco agent-save interview-prep --job-id <id> --data '{"tech_questions":[...]}'` |
 
 ### 职位搜索与评估
 
-| 命令 | 说明 | 用法 |
-|------|------|------|
-| `bco search` | 搜索职位 + 福利筛选 | `bco search <keyword> --city <city> --welfare <welfare> --page <n> --limit <n> --pages <n> -o <file>` |
-| | 输出到文件（绕过管道编码问题） | `bco search <keyword> -o result.json` |
-| `bco recommend` | 基于个人档案的个性化推荐 | `bco recommend` |
-| `bco evaluate` | 5维评估（单个/批量，规则引擎） | `bco evaluate [target]` 或 `bco evaluate --from-search` |
-| `bco detail` | 查看职位完整详情（双通道降级） | `bco detail <security_id>` |
+| 命令              | 说明               | 用法                                                                                                    |
+| --------------- | ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `bco search`    | 搜索职位 + 福利筛选      | `bco search <keyword> --city <city> --welfare <welfare> --page <n> --limit <n> --pages <n> -o <file>` |
+| <br />          | 输出到文件（绕过管道编码问题）  | `bco search <keyword> -o result.json`                                                                 |
+| `bco recommend` | 基于个人档案的个性化推荐     | `bco recommend`                                                                                       |
+| `bco evaluate`  | 5维评估（单个/批量，规则引擎） | `bco evaluate [target]` 或 `bco evaluate --from-search`                                                |
+| `bco detail`    | 查看职位完整详情（双通道降级）  | `bco detail <security_id>`                                                                            |
 
 ### 投递与沟通
 
-| 命令 | 说明 | 用法 |
-|------|------|------|
-| `bco greet` | 打招呼 | `bco greet <security_id> <job_id>` |
-| `bco batch-greet` | 批量打招呼（高斯延迟，最大10个） | `bco batch-greet <keyword> --city <city>` |
-| `bco apply` | 投递简历（浏览器通道） | `bco apply <security_id> <job_id>` |
-| `bco apply` | 投递前先上传简历再投递 | `bco apply <security_id> <job_id> --resume <job_id>` |
-| `bco resume` | 生成定制简历（MD/PDF） | `bco resume <job_id> --format <md\|pdf>` |
-| `bco resume` | 生成 PDF 并上传到 BOSS 直聘平台 | `bco resume <job_id> --format pdf --upload` |
+| 命令                | 说明                    | 用法                                                   |
+| ----------------- | --------------------- | ---------------------------------------------------- |
+| `bco greet`       | 打招呼                   | `bco greet <security_id> <job_id>`                   |
+| `bco batch-greet` | 批量打招呼（高斯延迟，最大10个）     | `bco batch-greet <keyword> --city <city>`            |
+| `bco apply`       | 投递简历（浏览器通道）           | `bco apply <security_id> <job_id>`                   |
+| `bco apply`       | 投递前先上传简历再投递           | `bco apply <security_id> <job_id> --resume <job_id>` |
+| `bco resume`      | 生成定制简历（MD/PDF）        | `bco resume <job_id> --format <md\|pdf>`             |
+| `bco resume`      | 生成 PDF 并上传到 BOSS 直聘平台 | `bco resume <job_id> --format pdf --upload`          |
 
 ### 聊天管理
 
-| 命令 | 说明 | 用法 |
-|------|------|------|
-| `bco chat` | 聊天列表（不带 --export 时列出所有聊天） | `bco chat` |
-| `bco chat` | 聊天导出 | `bco chat --export <csv\|json\|html\|md>` |
-| `bco chatmsg` | 聊天消息历史 | `bco chatmsg <security_id>` |
-| `bco chat-summary` | 聊天摘要（Agent 生成或规则回退） | `bco chat-summary <security_id>` |
-| `bco mark` | 联系人标签 | `bco mark <security_id> --tag <tag>` |
+| 命令                 | 说明                        | 用法                                        |
+| ------------------ | ------------------------- | ----------------------------------------- |
+| `bco chat`         | 聊天列表（不带 --export 时列出所有聊天） | `bco chat`                                |
+| `bco chat`         | 聊天导出                      | `bco chat --export <csv\|json\|html\|md>` |
+| `bco chatmsg`      | 聊天消息历史                    | `bco chatmsg <security_id>`               |
+| `bco chat-summary` | 聊天摘要（Agent 生成或规则回退）       | `bco chat-summary <security_id>`          |
+| `bco mark`         | 联系人标签                     | `bco mark <security_id> --tag <tag>`      |
 
 ### 流水线与导出
 
-| 命令 | 说明 | 用法 |
-|------|------|------|
-| `bco pipeline` | 求职流水线追踪（无参数） | `bco pipeline` |
-| `bco export` | 多格式导出 | `bco export <keyword> --city <city> -o <output> --format <csv\|json\|html\|md> --count <n>` |
+| 命令             | 说明           | 用法                                                                                          |
+| -------------- | ------------ | ------------------------------------------------------------------------------------------- |
+| `bco pipeline` | 求职流水线追踪（无参数） | `bco pipeline`                                                                              |
+| `bco export`   | 多格式导出        | `bco export <keyword> --city <city> -o <output> --format <csv\|json\|html\|md> --count <n>` |
 
 ### 面试与 Dashboard
 
-| 命令 | 说明 | 用法 |
-|------|------|------|
-| `bco interview` | 面试准备（Agent 生成） | `bco interview <job_id>` |
-| `bco dashboard` | 启动 TUI Dashboard（无参数） | `bco dashboard` |
-| `bco web` | 启动 Web 仪表盘（AI 求职决策仪表盘，零配置可用） | `bco web` |
+| 命令              | 说明                           | 用法                       |
+| --------------- | ---------------------------- | ------------------------ |
+| `bco interview` | 面试准备（Agent 生成）               | `bco interview <job_id>` |
+| `bco dashboard` | 启动 TUI Dashboard（无参数）        | `bco dashboard`          |
+| `bco web`       | 启动 Web 仪表盘（AI 求职决策仪表盘，零配置可用） | `bco web`                |
 
 ## 错误码速查表
 
 遇到 `ok: false` 时，根据 `error.code` 执行对应恢复动作：
 
-| 错误码 | 含义 | 恢复动作 |
-|--------|------|----------|
-| `AUTH_REQUIRED` | 未登录 | `bco login` |
-| `AUTH_EXPIRED` | 登录过期 | `bco login` |
-| `TOKEN_REFRESH_FAILED` | Token 刷新失败 | `bco login` |
-| `LOGIN_FAILED` | 登录失败 | 检查网络，重试 `bco login` |
-| `RATE_LIMITED` | 频率过高 | 等待后重试 |
-| `ACCOUNT_RISK` | 风控拦截 | 建议用 CDP Chrome 重试：`chrome.exe --remote-debugging-port=9222` |
-| `GREET_LIMIT` | 今日打招呼次数用完 | 告知用户，次日再试 |
-| `ALREADY_GREETED` | 已打过招呼 | 跳过此职位 |
-| `NETWORK_ERROR` | 网络错误 | 重试 |
-| `INVALID_PARAM` | 参数错误 | 修正参数后重试 |
-| `SEARCH_ERROR` | 搜索错误 | 检查参数，重试 |
-| `EVALUATE_ERROR` | 评估错误 | 检查职位数据，重试 |
-| `PARSE_ERROR` | 数据解析错误 | 检查输入格式 |
-| `HOOK_VETO` | Hook 拦截 | 确认操作意图 |
-| `SKIPPED_LOW_SCORE` | 低分跳过 | 正常行为，无需处理 |
-| `CONFIRM_REQUIRED` | 需人工确认 | 提示用户确认 |
-| `BATCH_GREET_ERROR` | 批量打招呼错误 | 检查登录态和参数 |
-| `RESUME_UPLOAD_ERROR` | 简历上传失败 | 检查浏览器通道，手动上传 |
-| `APPLY_BROWSER_ERROR` | 浏览器通道不可用 | 启动 Chrome CDP：`chrome.exe --remote-debugging-port=9222` |
-| `AI_NOT_AVAILABLE` | AI 不可用 | 使用 `bco agent-evaluate` + `bco agent-save` 替代 |
-| `AI_NOT_CONFIGURED` | AI 功能需要配置 API Key | 引导用户到 `bco web` 设置页配置，或设置环境变量 |
-| `WEB_AUTH_REQUIRED` | Web 写操作需要认证 | 设置 `BCO_WEB_API_KEY` 环境变量 |
-| `VALIDATION_ERROR` | 参数验证失败 | 检查输入参数 |
+| 错误码                    | 含义                | 恢复动作                                                        |
+| ---------------------- | ----------------- | ----------------------------------------------------------- |
+| `AUTH_REQUIRED`        | 未登录               | `bco login`                                                 |
+| `AUTH_EXPIRED`         | 登录过期              | `bco login`                                                 |
+| `TOKEN_REFRESH_FAILED` | Token 刷新失败        | `bco login`                                                 |
+| `LOGIN_FAILED`         | 登录失败              | 检查网络，重试 `bco login`                                         |
+| `RATE_LIMITED`         | 频率过高              | 等待后重试                                                       |
+| `ACCOUNT_RISK`         | 风控拦截              | 建议用 CDP Chrome 重试：`chrome.exe --remote-debugging-port=9222` |
+| `GREET_LIMIT`          | 今日打招呼次数用完         | 告知用户，次日再试                                                   |
+| `ALREADY_GREETED`      | 已打过招呼             | 跳过此职位                                                       |
+| `NETWORK_ERROR`        | 网络错误              | 重试                                                          |
+| `INVALID_PARAM`        | 参数错误              | 修正参数后重试                                                     |
+| `SEARCH_ERROR`         | 搜索错误              | 检查参数，重试                                                     |
+| `EVALUATE_ERROR`       | 评估错误              | 检查职位数据，重试                                                   |
+| `PARSE_ERROR`          | 数据解析错误            | 检查输入格式                                                      |
+| `HOOK_VETO`            | Hook 拦截           | 确认操作意图                                                      |
+| `SKIPPED_LOW_SCORE`    | 低分跳过              | 正常行为，无需处理                                                   |
+| `CONFIRM_REQUIRED`     | 需人工确认             | 提示用户确认                                                      |
+| `BATCH_GREET_ERROR`    | 批量打招呼错误           | 检查登录态和参数                                                    |
+| `RESUME_UPLOAD_ERROR`  | 简历上传失败            | 检查浏览器通道，手动上传                                                |
+| `APPLY_BROWSER_ERROR`  | 浏览器通道不可用          | 启动 Chrome CDP：`chrome.exe --remote-debugging-port=9222`     |
+| `AI_NOT_AVAILABLE`     | AI 不可用            | 使用 `bco agent-evaluate` + `bco agent-save` 替代               |
+| `AI_NOT_CONFIGURED`    | AI 功能需要配置 API Key | 引导用户到 `bco web` 设置页配置，或设置环境变量                               |
+| `WEB_AUTH_REQUIRED`    | Web 写操作需要认证       | 设置 `BCO_WEB_API_KEY` 环境变量                                   |
+| `VALIDATION_ERROR`     | 参数验证失败            | 检查输入参数                                                      |
 
 ## 环境变量
 
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `BCO_HOME` | 配置根目录 | `~/.bco/` |
-| `BCO_LLM_PROVIDER` | LLM 提供者（deepseek/openai/local） | deepseek |
-| `BCO_LLM_API_KEY` | LLM API Key | — |
-| `BCO_LLM_BASE_URL` | API Base URL（兼容 OpenAI 接口） | — |
-| `BCO_LLM_MODEL` | 模型名 | deepseek-chat |
-| `BCO_WEB_API_KEY` | Web 仪表盘写操作认证 Key | —（未设置时仅本地访问，启动时打印警告） |
-| `BCO_EMBEDDING_PROVIDER` | RAG Embedding 提供者（local/openai） | local |
+| 变量                       | 说明                              | 默认值                  |
+| ------------------------ | ------------------------------- | -------------------- |
+| `BCO_HOME`               | 配置根目录                           | `~/.bco/`            |
+| `BCO_LLM_PROVIDER`       | LLM 提供者（deepseek/openai/local）  | deepseek             |
+| `BCO_LLM_API_KEY`        | LLM API Key                     | —                    |
+| `BCO_LLM_BASE_URL`       | API Base URL（兼容 OpenAI 接口）      | —                    |
+| `BCO_LLM_MODEL`          | 模型名                             | deepseek-chat        |
+| `BCO_WEB_API_KEY`        | Web 仪表盘写操作认证 Key                | —（未设置时仅本地访问，启动时打印警告） |
+| `BCO_EMBEDDING_PROVIDER` | RAG Embedding 提供者（local/openai） | local                |
 
 修改 `BCO_HOME` 后，所有配置文件（profile.yml、thresholds.yml、tokens.enc 等）均从新目录读取。
 
@@ -392,3 +395,4 @@ AI 配置优先级：环境变量 > `~/.bco/ai_config.yml`（Web 设置页保存
 10. 不要在未评估的情况下直接投递或打招呼
 11. **Web 仪表盘**：默认仅本地访问（`127.0.0.1`），写操作需 `BCO_WEB_API_KEY` 认证
 12. **Token 自动刷新**：stoken 过期时系统自动尝试 CDP 刷新，无需用户重新登录
+
