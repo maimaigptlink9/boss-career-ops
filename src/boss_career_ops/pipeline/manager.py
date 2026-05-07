@@ -208,6 +208,35 @@ class PipelineManager(metaclass=SingletonMeta):
         if not self._batch_mode:
             self._db_commit()
 
+    @staticmethod
+    def _extract_job_data(job: Job) -> dict:
+        data = {}
+        if job.description:
+            data["description"] = job.description
+        if job.skills:
+            data["skills"] = job.skills
+        if job.city_name:
+            data["city_name"] = job.city_name
+        if job.experience:
+            data["experience"] = job.experience
+        if job.education:
+            data["education"] = job.education
+        if job.job_labels:
+            data["job_labels"] = job.job_labels
+        if job.salary_min is not None:
+            data["salary_min"] = job.salary_min
+        if job.salary_max is not None:
+            data["salary_max"] = job.salary_max
+        if job.salary_months:
+            data["salary_months"] = job.salary_months
+        if job.brand_stage:
+            data["brand_stage"] = job.brand_stage
+        if job.brand_scale:
+            data["brand_scale"] = job.brand_scale
+        if job.brand_industry:
+            data["brand_industry"] = job.brand_industry
+        return data
+
     def batch_add_jobs(self, jobs: list[Union[Job, dict]]):
         if not self._conn:
             raise RuntimeError("PipelineManager 未打开")
@@ -221,6 +250,7 @@ class PipelineManager(metaclass=SingletonMeta):
             job = Job.normalize(j)
             if job.job_id in dismissed_ids:
                 continue
+            job_data = self._extract_job_data(job)
             rows.append((
                 job.job_id,
                 job.job_name,
@@ -229,7 +259,7 @@ class PipelineManager(metaclass=SingletonMeta):
                 Stage.DISCOVERED.value,
                 job.security_id,
                 STATUS_ACTIVE,
-                json.dumps({}, ensure_ascii=False),
+                json.dumps(job_data, ensure_ascii=False),
                 now,
                 now,
             ))

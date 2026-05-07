@@ -25,7 +25,10 @@ def _get_pm():
 
 
 def get_job_detail(job_id: str) -> dict | None:
-    """读取职位详情，含 Pipeline data 中的所有评估结果"""
+    """读取职位详情，含 Pipeline data 中的所有评估结果
+
+    若 Pipeline 中无 JD 正文（description），自动调平台 API 补拉并回写
+    """
     with _get_pm() as pm:
         job = pm.get_job(job_id)
         if job is None:
@@ -33,7 +36,32 @@ def get_job_detail(job_id: str) -> dict | None:
         ai_results = pm.get_ai_results(job_id)
         if ai_results:
             job["ai_results"] = ai_results
+        _ensure_job_description(pm, job)
         return job
+
+
+def _ensure_job_description(pm, job: dict) -> None:
+    data = {}
+    try:
+        data = json.loads(job.get("data", "{}"))
+    except (json.JSONDecodeError, TypeError):
+        pass
+    if data.get("description"):
+        return
+    security_id = job.get("security_id", "")
+    if not security_id:
+        return
+    try:
+        adapter = get_active_adapter()
+        api_job = adapter.get_job_detail(security_id)
+        if api_job and api_job.description:
+            update_data = PipelineManager._extract_job_data(api_job)
+            pm.update_job_data(job["job_id"], update_data)
+            data.update(update_data)
+            job["data"] = json.dumps(data, ensure_ascii=False)
+            logger.info("从 API 补拉 JD 成功: %s", job["job_id"])
+    except Exception as e:
+        logger.warning("从 API 补拉 JD 失败: %s - %s", job["job_id"], e)
 
 
 def get_chat_messages(security_id: str) -> list[dict]:

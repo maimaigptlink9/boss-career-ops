@@ -4,6 +4,7 @@ from pathlib import Path
 
 from boss_career_ops.pipeline.manager import PipelineManager, _PIPELINE_COLS, _AI_RESULT_COLS
 from boss_career_ops.pipeline.stages import Stage
+from boss_career_ops.platform.models import Job
 
 
 class TestPipelineManager:
@@ -346,3 +347,57 @@ class TestSchemaMigration:
             cursor = pm._conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
             index_names = {row[0] for row in cursor.fetchall()}
         assert "idx_pipeline_status" in index_names
+
+
+class TestBatchAddJobs:
+    def test_batch_add_stores_job_info(self, tmp_dir):
+        db = tmp_dir / "test_batch.db"
+        job = Job(
+            job_id="j1",
+            security_id="s1",
+            job_name="Python开发",
+            company_name="测试公司",
+            salary_desc="20K-40K",
+            description="负责后端开发",
+        )
+        with PipelineManager(db) as pm:
+            pm.batch_add_jobs([job])
+            stored = pm.get_job("j1")
+        assert stored is not None
+        assert stored["job_name"] == "Python开发"
+        assert stored["company_name"] == "测试公司"
+        assert stored["security_id"] == "s1"
+
+    def test_batch_add_preserves_raw_data(self, tmp_dir):
+        db = tmp_dir / "test_batch_raw.db"
+        job = Job(
+            job_id="j1",
+            security_id="s1",
+            job_name="Python开发",
+            company_name="测试公司",
+            description="负责后端开发",
+            skills=["Python", "Go"],
+            raw_data={"encryptJobId": "j1", "postDescription": "负责后端开发", "skills": ["Python", "Go"]},
+        )
+        with PipelineManager(db) as pm:
+            pm.batch_add_jobs([job])
+            stored = pm.get_job("j1")
+        data = json.loads(stored["data"])
+        assert data.get("description") == "负责后端开发"
+        assert data.get("skills") == ["Python", "Go"]
+
+    def test_batch_add_from_dict_preserves_data(self, tmp_dir):
+        db = tmp_dir / "test_batch_dict.db"
+        raw = {
+            "encryptJobId": "j2",
+            "securityId": "s2",
+            "jobName": "Go开发",
+            "brandName": "某公司",
+            "postDescription": "负责Go微服务开发",
+            "skills": ["Go", "Docker"],
+        }
+        with PipelineManager(db) as pm:
+            pm.batch_add_jobs([raw])
+            stored = pm.get_job("j2")
+        data = json.loads(stored["data"])
+        assert data.get("description") == "负责Go微服务开发"

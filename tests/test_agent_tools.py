@@ -68,6 +68,57 @@ class TestGetJobDetail:
         result = get_job_detail("job1")
         assert "ai_results" in result
 
+    @patch("boss_career_ops.agent.tools.get_active_adapter")
+    @patch("boss_career_ops.agent.tools.PipelineManager")
+    def test_fetches_jd_from_api_when_missing(self, mock_pm_cls, mock_get_adapter):
+        mock_pm = MagicMock()
+        mock_pm.__enter__ = MagicMock(return_value=mock_pm)
+        mock_pm.__exit__ = MagicMock(return_value=False)
+        mock_pm.get_job.return_value = {
+            "job_id": "job1",
+            "security_id": "sec1",
+            "job_name": "Python开发",
+            "data": json.dumps({}),
+        }
+        mock_pm.get_ai_results.return_value = []
+        mock_pm_cls.return_value = mock_pm
+
+        mock_adapter = MagicMock()
+        from boss_career_ops.platform.models import Job
+        api_job = Job(
+            job_id="job1",
+            security_id="sec1",
+            job_name="Python开发",
+            description="负责后端微服务开发，要求熟悉Django框架",
+            skills=["Python", "Django"],
+        )
+        mock_adapter.get_job_detail.return_value = api_job
+        mock_get_adapter.return_value = mock_adapter
+
+        result = get_job_detail("job1")
+        assert result is not None
+        mock_adapter.get_job_detail.assert_called_once_with("sec1")
+        mock_pm.update_job_data.assert_called_once()
+
+    @patch("boss_career_ops.agent.tools.get_active_adapter")
+    @patch("boss_career_ops.agent.tools.PipelineManager")
+    def test_skips_api_fetch_when_description_exists(self, mock_pm_cls, mock_get_adapter):
+        mock_pm = MagicMock()
+        mock_pm.__enter__ = MagicMock(return_value=mock_pm)
+        mock_pm.__exit__ = MagicMock(return_value=False)
+        mock_pm.get_job.return_value = {
+            "job_id": "job1",
+            "security_id": "sec1",
+            "job_name": "Python开发",
+            "data": json.dumps({"description": "已有JD内容"}),
+        }
+        mock_pm.get_ai_results.return_value = []
+        mock_pm_cls.return_value = mock_pm
+
+        result = get_job_detail("job1")
+        assert result is not None
+        mock_get_adapter.assert_not_called()
+
 
 class TestGetChatMessages:
     @patch("boss_career_ops.agent.tools.get_active_adapter")
