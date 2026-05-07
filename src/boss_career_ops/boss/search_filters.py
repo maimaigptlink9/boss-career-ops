@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 CITY_MAP: dict[str, str] = {
     "全国": "100010000",
     "北京": "101010100",
@@ -127,6 +129,8 @@ def build_search_params(
         city_code = CITY_MAP.get(city)
         if city_code:
             params["city"] = city_code
+        else:
+            logging.getLogger(__name__).warning("城市 '%s' 不在编码表中，搜索将不限定城市", city)
     if experience:
         exp_code = EXPERIENCE_MAP.get(experience)
         if exp_code:

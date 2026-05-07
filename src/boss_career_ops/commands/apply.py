@@ -15,7 +15,17 @@ def _upload_resume_before_apply(job_id: str) -> dict:
     from boss_career_ops.config.settings import RESUMES_DIR, Settings
 
     adapter = get_active_adapter()
-    job = adapter.get_job_detail(job_id)
+    security_id = ""
+    try:
+        with PipelineManager() as pm:
+            job = pm.get_job(job_id)
+            if job:
+                security_id = job.get("security_id", "")
+    except Exception:
+        pass
+    if not security_id:
+        return {"ok": False, "message": f"缺少 security_id（job_id={job_id}），请先搜索该职位使其入库"}
+    job = adapter.get_job_detail(security_id)
     if job is None:
         return {"ok": False, "message": "获取职位详情失败"}
     job_dict = job.to_dict()

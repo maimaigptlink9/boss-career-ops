@@ -18,10 +18,25 @@ def _build_display_name(job, profile) -> str:
     return f"{name}_{job_name}.pdf"
 
 
+def _get_security_id_from_pipeline(job_id: str) -> str:
+    try:
+        with PipelineManager() as pm:
+            job = pm.get_job(job_id)
+            if job:
+                return job.get("security_id", "")
+    except Exception:
+        pass
+    return ""
+
+
 def run_resume(job_id: str, fmt: str, upload: bool = False):
     adapter = get_active_adapter()
+    security_id = _get_security_id_from_pipeline(job_id)
+    if not security_id:
+        output_error(command="resume", message=f"缺少 security_id（job_id={job_id}），请先搜索该职位使其入库", code="MISSING_SECURITY_ID")
+        return
     try:
-        job = adapter.get_job_detail(job_id)
+        job = adapter.get_job_detail(security_id)
         if not job:
             output_error(command="resume", message="获取职位详情失败", code="DETAIL_ERROR")
             return

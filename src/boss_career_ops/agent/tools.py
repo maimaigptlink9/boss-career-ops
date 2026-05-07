@@ -447,8 +447,19 @@ def upload_resume(job_id: str) -> dict:
         from boss_career_ops.resume.upload import ResumeUploader
 
         adapter = get_active_adapter()
+        security_id = ""
         try:
-            job = adapter.get_job_detail(job_id)
+            with _get_pm() as pm:
+                pipeline_job = pm.get_job(job_id)
+                if pipeline_job:
+                    security_id = pipeline_job.get("security_id", "")
+        except Exception:
+            pass
+        try:
+            if security_id:
+                job = adapter.get_job_detail(security_id)
+            else:
+                job = None
             if job is None:
                 return {"ok": False, "message": "获取职位详情失败"}
             job_dict = job.to_dict()

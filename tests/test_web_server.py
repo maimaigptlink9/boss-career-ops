@@ -138,7 +138,8 @@ class TestPipelineApi:
 class TestJobDetailApi:
     def test_get_job_detail(self):
         with patch("boss_career_ops.web.server.agent_tools") as mock_tools:
-            mock_tools.get_job_with_ai_result.return_value = {"job_id": "1", "job_name": "Go"}
+            mock_tools.get_job_detail.return_value = {"job_id": "1", "job_name": "Go"}
+            mock_tools.get_job_with_ai_result.return_value = {"job_id": "1", "job_name": "Go", "ai_results": {}}
             res = client.get("/api/jobs/1")
             assert res.status_code == 200
             data = res.json()
@@ -147,7 +148,7 @@ class TestJobDetailApi:
 
     def test_get_job_not_found(self):
         with patch("boss_career_ops.web.server.agent_tools") as mock_tools:
-            mock_tools.get_job_with_ai_result.return_value = None
+            mock_tools.get_job_detail.return_value = None
             res = client.get("/api/jobs/999")
             assert res.status_code == 200
             data = res.json()
@@ -344,10 +345,11 @@ class TestAsyncEndpointsNonBlocking:
 
     def test_job_detail_endpoint_uses_to_thread(self):
         with patch("boss_career_ops.web.server.agent_tools") as mock_tools:
-            mock_tools.get_job_with_ai_result.return_value = {"job_id": "1"}
+            mock_tools.get_job_detail.return_value = {"job_id": "1"}
+            mock_tools.get_job_with_ai_result.return_value = {"job_id": "1", "ai_results": {}}
             res = client.get("/api/jobs/1")
             assert res.status_code == 200
-            mock_tools.get_job_with_ai_result.assert_called_once_with("1")
+            mock_tools.get_job_detail.assert_called_once_with("1")
 
     def test_chat_endpoint_uses_to_thread(self):
         with patch("boss_career_ops.web.server.agent_tools") as mock_tools:

@@ -209,8 +209,8 @@ class TestRequestViaBrowser:
         result = client._request_via_browser("search", {"query": "python", "__zp_stoken__": "tok123"})
         assert result == {"code": 0}
         call_args = client._browser_post.call_args
-        assert call_args[0][0] == "/api/search?__zp_stoken__=tok123"
-        assert call_args[0][1] == {"query": "python"}
+        assert call_args[0][0] == "/api/search?query=python&__zp_stoken__=tok123"
+        assert call_args[0][1] is None
 
     def test_post_endpoint_uses_json_data_when_provided(self, client, mocker):
         mocker.patch.object(client, "_get_cookies", return_value={"sid": "abc"})

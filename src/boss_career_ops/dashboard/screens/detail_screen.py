@@ -1,6 +1,8 @@
 from textual.widgets import Static, Markdown
 from textual.containers import VerticalScroll
 
+import json
+
 from boss_career_ops.pipeline.manager import PipelineManager
 
 
@@ -45,6 +47,15 @@ class DetailScreen(VerticalScroll):
             md_parts.append(f"**经验要求**: {job.get('experience', '')}")
         if job.get("education"):
             md_parts.append(f"**学历要求**: {job.get('education', '')}")
+        data = {}
+        try:
+            data = json.loads(job.get("data", "{}"))
+        except (json.JSONDecodeError, TypeError):
+            pass
+        description = data.get("description", "")
+        if description:
+            md_parts.append("\n### 职位描述")
+            md_parts.append(description)
         if job.get("evaluate_report"):
             md_parts.append("\n### 评估报告")
             md_parts.append(job.get("evaluate_report", ""))

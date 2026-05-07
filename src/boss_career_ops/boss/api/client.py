@@ -1,5 +1,6 @@
 import random
 import time
+import urllib.parse
 from typing import Any
 
 import httpx
@@ -103,11 +104,13 @@ class BossClient(metaclass=SingletonMeta):
         if cookies is None:
             cookies = self._get_cookies()
         if endpoint_name == "search":
-            query = ""
-            if params and params.get("query"):
-                import urllib.parse
-                query = f"?{urllib.parse.urlencode({'query': params['query']})}"
-            headers["Referer"] = f"https://www.zhipin.com/web/geek/job{query}"
+            referer_params = {}
+            if params:
+                for k in ("query", "city", "experience", "education", "jobType"):
+                    if params.get(k):
+                        referer_params[k] = params[k]
+            qs = urllib.parse.urlencode(referer_params) if referer_params else ""
+            headers["Referer"] = f"https://www.zhipin.com/web/geek/job?{qs}" if qs else "https://www.zhipin.com/web/geek/job"
         elif endpoint_name in ("recommend", "recommend_v2"):
             headers["Referer"] = "https://www.zhipin.com/web/geek/recommend"
         elif endpoint_name in ("job_detail",):
@@ -368,19 +371,27 @@ class BossClient(metaclass=SingletonMeta):
             return self._browser_get(api_path, params, {}, cookies)
 
         stoken_val = ""
+        query_params = {}
         body_params = {}
         effective_data = json_data if json_data is not None else {}
         if params:
             for k, v in params.items():
                 if k == "__zp_stoken__":
                     stoken_val = str(v)
+                elif k in ("query", "city", "page", "pageSize",
+                           "experience", "education", "jobType",
+                           "scale", "financeStage", "salary"):
+                    query_params[k] = v
                 elif k not in effective_data:
                     body_params[k] = v
         body_params.update(effective_data)
+        qs = urllib.parse.urlencode(query_params) if query_params else ""
         fetch_url = api_path
+        if qs:
+            fetch_url = f"{api_path}?{qs}"
         if stoken_val:
-            fetch_url = f"{api_path}?__zp_stoken__={stoken_val}"
-        return self._browser_post(fetch_url, body_params, {}, cookies)
+            fetch_url += f"{'&' if qs else '?'}__zp_stoken__={stoken_val}"
+        return self._browser_post(fetch_url, body_params if body_params else None, {}, cookies)
 
     def request(self, endpoint_name: str, params: dict | None = None, json_data: dict | None = None) -> dict:
         ep = self._endpoints.get(endpoint_name)

@@ -100,13 +100,18 @@ class BossAdapter(PlatformAdapter):
             city = params.get("city", "")
             page_num = params.get("page", 1)
             page_size = params.get("pageSize", 15)
-            search_url = f"https://www.zhipin.com/web/geek/job?query={keyword}"
+            import urllib.parse
+            nav_params = {"query": keyword}
             if city:
-                search_url += f"&city={city}"
+                nav_params["city"] = city
             if page_num and int(page_num) > 1:
-                search_url += f"&page={page_num}"
+                nav_params["page"] = page_num
             if page_size:
-                search_url += f"&pageSize={page_size}"
+                nav_params["pageSize"] = page_size
+            for k in ("experience", "education", "jobType", "scale", "financeStage", "salary"):
+                if params.get(k):
+                    nav_params[k] = params[k]
+            search_url = f"https://www.zhipin.com/web/geek/job?{urllib.parse.urlencode(nav_params)}"
             api_response = {}
 
             def _handle_response(response):

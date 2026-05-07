@@ -138,9 +138,12 @@ else:
     @app.get("/api/jobs/{job_id}")
     async def api_job_detail(job_id: str):
         try:
-            job = await asyncio.to_thread(agent_tools.get_job_with_ai_result, job_id)
+            job = await asyncio.to_thread(agent_tools.get_job_detail, job_id)
             if job is None:
                 return _err("职位不存在", "NOT_FOUND")
+            ai_results = await asyncio.to_thread(agent_tools.get_job_with_ai_result, job_id)
+            if ai_results and "ai_results" in ai_results:
+                job["ai_results"] = ai_results["ai_results"]
             return _ok(job)
         except Exception as e:
             logger.error("获取职位详情失败: %s", e)
