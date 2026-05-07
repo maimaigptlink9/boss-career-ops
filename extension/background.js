@@ -1,13 +1,27 @@
-const BRIDGE_URL = "ws://127.0.0.1:18765/ws";
+const BRIDGE_BASE = "ws://127.0.0.1:18765/ws";
+const TOKEN_URL = "http://127.0.0.1:18765/token";
 const RECONNECT_ALARM = "bco-reconnect";
 const RECONNECT_DELAY_MINUTES = 0.08;
 let ws = null;
 
-function connect() {
+async function fetchToken() {
+  try {
+    const resp = await fetch(TOKEN_URL);
+    const data = await resp.json();
+    if (data.ok && data.token) return data.token;
+  } catch (e) {
+    console.error("[Boss-Career-Ops] Failed to fetch token:", e);
+  }
+  return null;
+}
+
+async function connect() {
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
     return;
   }
-  ws = new WebSocket(BRIDGE_URL);
+  const token = await fetchToken();
+  const url = token ? `${BRIDGE_BASE}?token=${token}` : BRIDGE_BASE;
+  ws = new WebSocket(url);
   ws.onopen = () => {
     console.log("[Boss-Career-Ops] Bridge connected");
     chrome.alarms.clear(RECONNECT_ALARM);

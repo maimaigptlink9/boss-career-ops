@@ -44,11 +44,17 @@ class BridgeDaemon:
         self._command_timeout = int(os.environ.get("BCO_BRIDGE_TIMEOUT", "30"))
         self._app = web.Application()
         self._app.router.add_get("/status", self._handle_status)
+        self._app.router.add_get("/token", self._handle_token)
         self._app.router.add_get("/ws", self._handle_ws)
         self._extensions: list[web.WebSocketResponse] = []
         self._pending_results: dict[str, tuple[asyncio.Future, float]] = {}
 
     def _generate_token(self) -> str:
+        if TOKEN_FILE.exists():
+            token = TOKEN_FILE.read_text(encoding="utf-8").strip()
+            if token:
+                logger.info("复用已有 Bridge token: %s", TOKEN_FILE)
+                return token
         token = secrets.token_hex(32)
         TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
         TOKEN_FILE.write_text(token, encoding="utf-8")
@@ -66,6 +72,9 @@ class BridgeDaemon:
         if self._last_cookie_result is not None:
             result["last_cookie_fetch"] = self._last_cookie_result
         return web.json_response(result)
+
+    async def _handle_token(self, request: web.Request) -> web.Response:
+        return web.json_response({"ok": True, "token": self._token})
 
     def _validate_token(self, request: web.Request) -> bool:
         token_param = request.query.get("token", "")
