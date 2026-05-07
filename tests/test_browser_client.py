@@ -102,6 +102,35 @@ class TestEnsureConnectedNoBridge:
             mock_pr.assert_not_called()
 
 
+class TestGetPageCdpCleanup:
+    def test_cdp_session_detached_after_send(self):
+        bc = BrowserClient()
+        mock_context = MagicMock()
+        mock_page = MagicMock()
+        mock_cdp = MagicMock()
+        mock_context.new_page.return_value = mock_page
+        mock_context.new_cdp_session.return_value = mock_cdp
+        bc._context = mock_context
+        result = bc.get_page()
+        assert result is mock_page
+        mock_context.new_cdp_session.assert_called_once_with(mock_page)
+        mock_cdp.send.assert_called_once()
+        mock_cdp.detach.assert_called_once()
+
+    def test_cdp_session_detached_on_send_error(self):
+        bc = BrowserClient()
+        mock_context = MagicMock()
+        mock_page = MagicMock()
+        mock_cdp = MagicMock()
+        mock_cdp.send.side_effect = RuntimeError("CDP send failed")
+        mock_context.new_page.return_value = mock_page
+        mock_context.new_cdp_session.return_value = mock_cdp
+        bc._context = mock_context
+        with pytest.raises(RuntimeError, match="CDP send failed"):
+            bc.get_page()
+        mock_cdp.detach.assert_called_once()
+
+
 class TestCloseResetsBridgeCache:
     def test_close_resets_bridge_availability(self):
         bc = BrowserClient()

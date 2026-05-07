@@ -48,12 +48,12 @@ def _ensure_job_description(pm, job: dict) -> None:
         pass
     if data.get("description"):
         return
-    security_id = job.get("security_id", "")
-    if not security_id:
+    detail_id = job.get("security_id", "") or job.get("job_id", "")
+    if not detail_id:
         return
     try:
         adapter = get_active_adapter()
-        api_job = adapter.get_job_detail(security_id)
+        api_job = adapter.get_job_detail(detail_id)
         if api_job is None:
             logger.warning("从 API 补拉 JD 失败: %s - 接口返回空（可能限流或网络异常）", job["job_id"])
             return
