@@ -21,6 +21,7 @@ from boss_career_ops.agent.tools import (
     prepare_interview,
     evaluate_job,
     generate_resume,
+    _ensure_job_description,
 )
 from boss_career_ops.config.singleton import SingletonMeta
 from boss_career_ops.pipeline.manager import PipelineManager
@@ -520,3 +521,93 @@ class TestGenerateResumeHighLevel:
 
         assert result == ""
         mock_write_resume.assert_not_called()
+
+
+class TestEnsureJobDescription:
+    @patch("boss_career_ops.agent.tools.get_active_adapter")
+    def test_adapter_returns_none_logs_warning(self, mock_get_adapter, caplog):
+        import logging
+
+        mock_pm = MagicMock()
+        mock_adapter = MagicMock()
+        mock_adapter.get_job_detail.return_value = None
+        mock_get_adapter.return_value = mock_adapter
+
+        job = {"job_id": "job1", "security_id": "sec1", "data": "{}"}
+
+        with caplog.at_level(logging.WARNING):
+            _ensure_job_description(mock_pm, job)
+
+        mock_adapter.get_job_detail.assert_called_once_with("sec1")
+        mock_pm.update_job_data.assert_not_called()
+        assert any("接口返回空" in r.message for r in caplog.records)
+
+    @patch("boss_career_ops.agent.tools.get_active_adapter")
+    def test_adapter_returns_job_without_description_logs_warning(self, mock_get_adapter, caplog):
+        import logging
+        from boss_career_ops.platform.models import Job
+
+        mock_pm = MagicMock()
+        mock_adapter = MagicMock()
+        api_job = Job(job_id="job1", security_id="sec1", job_name="Python开发", description="")
+        mock_adapter.get_job_detail.return_value = api_job
+        mock_get_adapter.return_value = mock_adapter
+
+        job = {"job_id": "job1", "security_id": "sec1", "data": "{}"}
+
+        with caplog.at_level(logging.WARNING):
+            _ensure_job_description(mock_pm, job)
+
+        mock_pm.update_job_data.assert_not_called()
+        assert any("接口返回数据但无 description" in r.message for r in caplog.records)
+
+    @patch("boss_career_ops.agent.tools.get_active_adapter")
+    def test_adapter_raises_exception_logs_warning(self, mock_get_adapter, caplog):
+        import logging
+
+        mock_pm = MagicMock()
+        mock_adapter = MagicMock()
+        mock_adapter.get_job_detail.side_effect = RuntimeError("连接超时")
+        mock_get_adapter.return_value = mock_adapter
+
+        job = {"job_id": "job1", "security_id": "sec1", "data": "{}"}
+
+        with caplog.at_level(logging.WARNING):
+            _ensure_job_description(mock_pm, job)
+
+        mock_pm.update_job_data.assert_not_called()
+        assert any("连接超时" in r.message for r in caplog.records)
+
+    @patch("boss_career_ops.agent.tools.get_active_adapter")
+    def test_adapter_returns_job_with_description_updates_pipeline(self, mock_get_adapter):
+        from boss_career_ops.platform.models import Job
+
+        mock_pm = MagicMock()
+        mock_pm._extract_job_data.return_value = {"description": "JD内容", "skills": ["Python"]}
+
+        mock_adapter = MagicMock()
+        api_job = Job(job_id="job1", security_id="sec1", job_name="Python开发", description="JD内容")
+        mock_adapter.get_job_detail.return_value = api_job
+        mock_get_adapter.return_value = mock_adapter
+
+        job = {"job_id": "job1", "security_id": "sec1", "data": "{}"}
+
+        _ensure_job_description(mock_pm, job)
+
+        mock_pm.update_job_data.assert_called_once()
+
+    def test_skips_when_description_already_present(self):
+        mock_pm = MagicMock()
+        job = {"job_id": "job1", "security_id": "sec1", "data": json.dumps({"description": "已有JD"})}
+
+        _ensure_job_description(mock_pm, job)
+
+        mock_pm.update_job_data.assert_not_called()
+
+    def test_skips_when_no_security_id(self):
+        mock_pm = MagicMock()
+        job = {"job_id": "job1", "data": "{}"}
+
+        _ensure_job_description(mock_pm, job)
+
+        mock_pm.update_job_data.assert_not_called()

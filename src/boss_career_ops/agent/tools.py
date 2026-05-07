@@ -54,12 +54,17 @@ def _ensure_job_description(pm, job: dict) -> None:
     try:
         adapter = get_active_adapter()
         api_job = adapter.get_job_detail(security_id)
-        if api_job and api_job.description:
-            update_data = PipelineManager._extract_job_data(api_job)
-            pm.update_job_data(job["job_id"], update_data)
-            data.update(update_data)
-            job["data"] = json.dumps(data, ensure_ascii=False)
-            logger.info("从 API 补拉 JD 成功: %s", job["job_id"])
+        if api_job is None:
+            logger.warning("从 API 补拉 JD 失败: %s - 接口返回空（可能限流或网络异常）", job["job_id"])
+            return
+        if not api_job.description:
+            logger.warning("从 API 补拉 JD 失败: %s - 接口返回数据但无 description", job["job_id"])
+            return
+        update_data = PipelineManager._extract_job_data(api_job)
+        pm.update_job_data(job["job_id"], update_data)
+        data.update(update_data)
+        job["data"] = json.dumps(data, ensure_ascii=False)
+        logger.info("从 API 补拉 JD 成功: %s", job["job_id"])
     except Exception as e:
         logger.warning("从 API 补拉 JD 失败: %s - %s", job["job_id"], e)
 
