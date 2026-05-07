@@ -121,7 +121,8 @@ class BrowserClient(metaclass=SingletonMeta):
         if not self.ensure_connected():
             raise RuntimeError("浏览器连接失败")
         page = self._context.new_page()
-        page.add_init_script(ANTI_REDIRECT_JS)
+        cdp = self._context.new_cdp_session(page)
+        cdp.send("Page.addScriptToEvaluateOnNewDocument", {"source": ANTI_REDIRECT_JS})
         return page
 
     def add_cookies(self, cookies: list[dict]):
