@@ -142,7 +142,11 @@ class BossAdapter(PlatformAdapter):
         resp = self._client.get("job_detail", params={"encryptJobId": security_id})
         if resp.get("_risk_blocked"):
             logger.warning("获取职位详情被风控拦截，尝试浏览器通道降级: %s", security_id)
-            return self._get_job_detail_via_browser(security_id)
+            job = self._get_job_detail_via_browser(security_id)
+            if job is None:
+                return Job(raw_data={"_risk_blocked": True})
+            job.raw_data["_browser_fetched"] = True
+            return job
         if resp.get("code") != 0:
             return None
         job_info = resp.get("zpData", {}).get("jobInfo", {})

@@ -1,9 +1,16 @@
+import os
 import sys
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 if sys.stderr and hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
+
+if not os.environ.get("PYTHONIOENCODING"):
+    import logging
+    logging.getLogger("boss_career_ops").debug(
+        "建议设置环境变量 PYTHONIOENCODING=utf-8 以避免 subprocess 调用时的编码问题"
+    )
 
 import click
 
@@ -64,6 +71,14 @@ def recommend():
     """个性化推荐"""
     from boss_career_ops.commands.recommend import run_recommend
     run_recommend()
+
+
+@cli.command()
+@click.argument("job_id")
+def detail(job_id):
+    """查看职位详情（含 JD、评估结果）"""
+    from boss_career_ops.commands.detail import run_detail
+    run_detail(job_id)
 
 
 @cli.command()

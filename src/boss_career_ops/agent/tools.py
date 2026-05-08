@@ -13,6 +13,8 @@ from boss_career_ops.platform.registry import get_active_adapter
 logger = get_logger(__name__)
 
 EVAL_LIMIT = 50
+_JD_MAX_RETRIES = 3
+_JD_RETRY_BASE_DELAY = 2.0
 
 _pm = None
 
@@ -47,26 +49,69 @@ def _ensure_job_description(pm, job: dict) -> None:
     except (json.JSONDecodeError, TypeError):
         pass
     if data.get("description"):
+        if not data.get("jd_status"):
+            pm.update_job_data(job["job_id"], {"jd_status": "ok"})
         return
     detail_id = job.get("security_id", "") or job.get("job_id", "")
     if not detail_id:
+        pm.update_job_data(job["job_id"], {"jd_status": "missing"})
         return
-    try:
-        adapter = get_active_adapter()
-        api_job = adapter.get_job_detail(detail_id)
-        if api_job is None:
-            logger.warning("从 API 补拉 JD 失败: %s - 接口返回空（可能限流或网络异常）", job["job_id"])
+    for attempt in range(_JD_MAX_RETRIES):
+        try:
+            adapter = get_active_adapter()
+            api_job = adapter.get_job_detail(detail_id)
+            if api_job is None:
+                logger.warning(
+                    "从 API 补拉 JD 失败 (尝试 %d/%d): %s - 接口返回空",
+                    attempt + 1, _JD_MAX_RETRIES, job["job_id"],
+                )
+                if attempt < _JD_MAX_RETRIES - 1:
+                    delay = _JD_RETRY_BASE_DELAY * (2 ** attempt) + random.uniform(0, 1)
+                    time.sleep(delay)
+                    continue
+                pm.update_job_data(job["job_id"], {"jd_status": "fetch_failed"})
+                return
+            if not api_job.description:
+                if api_job.raw_data.get("_risk_blocked"):
+                    logger.warning(
+                        "从 API 补拉 JD 被风控拦截且浏览器降级失败 (尝试 %d/%d): %s",
+                        attempt + 1, _JD_MAX_RETRIES, job["job_id"],
+                    )
+                    if attempt < _JD_MAX_RETRIES - 1:
+                        delay = _JD_RETRY_BASE_DELAY * (2 ** attempt) + random.uniform(0, 1)
+                        time.sleep(delay)
+                        continue
+                    pm.update_job_data(job["job_id"], {"jd_status": "blocked"})
+                    return
+                logger.warning(
+                    "从 API 补拉 JD 失败 (尝试 %d/%d): %s - 接口返回数据但无 description",
+                    attempt + 1, _JD_MAX_RETRIES, job["job_id"],
+                )
+                if attempt < _JD_MAX_RETRIES - 1:
+                    delay = _JD_RETRY_BASE_DELAY * (2 ** attempt) + random.uniform(0, 1)
+                    time.sleep(delay)
+                    continue
+                pm.update_job_data(job["job_id"], {"jd_status": "fetch_failed"})
+                return
+            data_source = "browser_fetch" if api_job.raw_data.get("_browser_fetched") else "detail_api"
+            update_data = PipelineManager._extract_job_data(api_job, data_source=data_source)
+            update_data["jd_status"] = "ok"
+            pm.update_job_data(job["job_id"], update_data)
+            data.update(update_data)
+            job["data"] = json.dumps(data, ensure_ascii=False)
+            logger.info("从 API 补拉 JD 成功: %s", job["job_id"])
             return
-        if not api_job.description:
-            logger.warning("从 API 补拉 JD 失败: %s - 接口返回数据但无 description", job["job_id"])
+        except Exception as e:
+            logger.warning(
+                "从 API 补拉 JD 失败 (尝试 %d/%d): %s - %s",
+                attempt + 1, _JD_MAX_RETRIES, job["job_id"], e,
+            )
+            if attempt < _JD_MAX_RETRIES - 1:
+                delay = _JD_RETRY_BASE_DELAY * (2 ** attempt) + random.uniform(0, 1)
+                time.sleep(delay)
+                continue
+            pm.update_job_data(job["job_id"], {"jd_status": "fetch_failed"})
             return
-        update_data = PipelineManager._extract_job_data(api_job)
-        pm.update_job_data(job["job_id"], update_data)
-        data.update(update_data)
-        job["data"] = json.dumps(data, ensure_ascii=False)
-        logger.info("从 API 补拉 JD 成功: %s", job["job_id"])
-    except Exception as e:
-        logger.warning("从 API 补拉 JD 失败: %s - %s", job["job_id"], e)
 
 
 def get_chat_messages(security_id: str) -> list[dict]:

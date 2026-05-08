@@ -268,7 +268,6 @@ class BossClient(metaclass=SingletonMeta):
             """
             result = page_obj.evaluate(js_code)
             page_obj.close()
-            browser.close()
 
             if result and isinstance(result, dict):
                 if result.get("code") == 0:
@@ -337,7 +336,6 @@ class BossClient(metaclass=SingletonMeta):
             """
             result = page_obj.evaluate(js_code)
             page_obj.close()
-            browser.close()
 
             if result and isinstance(result, dict):
                 if result.get("code") == 0:

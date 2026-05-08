@@ -38,7 +38,7 @@ def run_recommend():
         output_json(
             command="recommend",
             data=[j.to_dict() for j in job_list],
-            hints={"next_actions": ["bco evaluate --from-search", "bco detail <security_id>"]},
+            hints={"next_actions": ["bco evaluate --from-search", "bco detail <job_id>"]},
         )
     except Exception as e:
         logger.error("推荐异常: %s", e)

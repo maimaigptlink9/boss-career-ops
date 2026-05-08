@@ -209,7 +209,7 @@ class PipelineManager(metaclass=SingletonMeta):
             self._db_commit()
 
     @staticmethod
-    def _extract_job_data(job: Job) -> dict:
+    def _extract_job_data(job: Job, data_source: str = "") -> dict:
         data = {}
         if job.description:
             data["description"] = job.description
@@ -235,6 +235,8 @@ class PipelineManager(metaclass=SingletonMeta):
             data["brand_scale"] = job.brand_scale
         if job.brand_industry:
             data["brand_industry"] = job.brand_industry
+        if data_source:
+            data["data_source"] = data_source
         return data
 
     def batch_add_jobs(self, jobs: list[Union[Job, dict]]):
@@ -250,7 +252,7 @@ class PipelineManager(metaclass=SingletonMeta):
             job = Job.normalize(j)
             if job.job_id in dismissed_ids:
                 continue
-            job_data = self._extract_job_data(job)
+            job_data = self._extract_job_data(job, data_source="search_api")
             rows.append((
                 job.job_id,
                 job.job_name,
@@ -279,7 +281,8 @@ class PipelineManager(metaclass=SingletonMeta):
         if not row:
             return
         current_data = json.loads(row[0]) if row[0] else {}
-        current_data.update(data_updates)
+        filtered_updates = {k: v for k, v in data_updates.items() if v is not None and v != ""}
+        current_data.update(filtered_updates)
         self._db_execute(
             "UPDATE pipeline SET data = ?, updated_at = ? WHERE job_id = ?",
             (json.dumps(current_data, ensure_ascii=False), time.time(), job_id),

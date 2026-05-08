@@ -50,6 +50,54 @@ def normalize_skills(skills_raw) -> list[str]:
     return []
 
 
+def normalize_experience(experience: str) -> tuple[int, int] | None:
+    """将经验字符串标准化为年数范围元组"""
+    if not experience:
+        return None
+    match = re.findall(r'(\d+)\s*[-—~]\s*(\d+)', experience)
+    if match:
+        return int(match[0][0]), int(match[0][1])
+    single = re.findall(r'(\d+)\s*年', experience)
+    if len(single) == 1:
+        return int(single[0]), int(single[0])
+    if "不限" in experience or "应届" in experience:
+        return 0, 0
+    return None
+
+
+def normalize_education(education: str) -> int | None:
+    """将学历字符串标准化为等级整数"""
+    if not education:
+        return None
+    mapping = {
+        "初中及以下": 1, "中专": 2, "中技": 2, "高中": 3,
+        "大专": 4, "本科": 5, "硕士": 6, "博士": 7,
+        "学历不限": 0, "不限": 0,
+    }
+    for key, level in mapping.items():
+        if key in education:
+            return level
+    return None
+
+
+def normalize_brand_scale(scale: str) -> tuple[int, int] | None:
+    """将公司规模字符串标准化为人数范围元组"""
+    if not scale:
+        return None
+    match = re.findall(r'(\d+)\s*[-—~]\s*(\d+)', scale)
+    if match:
+        return int(match[0][0]), int(match[0][1])
+    if "10000" in scale or "以上" in scale:
+        single = re.findall(r'(\d+)', scale)
+        if single:
+            return int(single[-1]), 99999
+    if "少于" in scale or "0" in scale:
+        single = re.findall(r'(\d+)', scale)
+        if single:
+            return 0, int(single[0])
+    return None
+
+
 class BossFieldMapper(FieldMapper):
 
     def map_job(self, raw_data: dict[str, Any]) -> Job:
@@ -60,6 +108,10 @@ class BossFieldMapper(FieldMapper):
         salary_months = salary_range[2] if salary_range else 12
 
         skills = normalize_skills(raw_data.get("skills", ""))
+
+        experience_range = normalize_experience(str(raw_data.get("jobExperience", "")))
+        education_level = normalize_education(str(raw_data.get("jobDegree", "")))
+        brand_scale_range = normalize_brand_scale(str(raw_data.get("brandScaleName", "")))
 
         job_labels_raw = raw_data.get("jobLabels", [])
         if isinstance(job_labels_raw, list):
@@ -87,6 +139,9 @@ class BossFieldMapper(FieldMapper):
             brand_stage=str(raw_data.get("brandStageName", "")),
             brand_scale=str(raw_data.get("brandScaleName", "")),
             brand_industry=str(raw_data.get("brandIndustry", "")),
+            experience_range=experience_range,
+            education_level=education_level,
+            brand_scale_range=brand_scale_range,
             raw_data=dict(raw_data),
         )
 

@@ -41,7 +41,7 @@ class TestGetJobDetail:
         mock_pm = MagicMock()
         mock_pm.__enter__ = MagicMock(return_value=mock_pm)
         mock_pm.__exit__ = MagicMock(return_value=False)
-        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Golang工程师"}
+        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Golang工程师", "data": json.dumps({"description": "已有JD"}), "security_id": "sec1"}
         mock_pm.get_ai_results.return_value = []
         mock_pm_cls.return_value = mock_pm
         result = get_job_detail("job1")
@@ -63,7 +63,7 @@ class TestGetJobDetail:
         mock_pm = MagicMock()
         mock_pm.__enter__ = MagicMock(return_value=mock_pm)
         mock_pm.__exit__ = MagicMock(return_value=False)
-        mock_pm.get_job.return_value = {"job_id": "job1"}
+        mock_pm.get_job.return_value = {"job_id": "job1", "data": json.dumps({"description": "已有JD"}), "security_id": "sec1"}
         mock_pm.get_ai_results.return_value = [{"task_type": "evaluate", "result": '{"score":4.2}'}]
         mock_pm_cls.return_value = mock_pm
         result = get_job_detail("job1")
@@ -384,7 +384,7 @@ class TestPrepareInterview:
         mock_pm = MagicMock()
         mock_pm.__enter__ = MagicMock(return_value=mock_pm)
         mock_pm.__exit__ = MagicMock(return_value=False)
-        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发", "company_name": "公司A"}
+        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发", "company_name": "公司A", "data": json.dumps({"description": "已有JD"}), "security_id": "sec1"}
         mock_pm.get_ai_results.return_value = []
         mock_pm.get_ai_result.return_value = None
         mock_pm_cls.return_value = mock_pm
@@ -397,7 +397,7 @@ class TestPrepareInterview:
         mock_pm = MagicMock()
         mock_pm.__enter__ = MagicMock(return_value=mock_pm)
         mock_pm.__exit__ = MagicMock(return_value=False)
-        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发", "company_name": "公司A"}
+        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发", "company_name": "公司A", "data": json.dumps({"description": "已有JD"}), "security_id": "sec1"}
         mock_pm.get_ai_results.return_value = [{"task_type": "interview_prep", "result": '{"questions": ["Q1"], "source": "agent"}'}]
         mock_pm.get_ai_result.return_value = {"task_type": "interview_prep", "result": '{"questions": ["Q1"]}'}
         mock_pm_cls.return_value = mock_pm
@@ -424,7 +424,7 @@ class TestEvaluateJobHighLevel:
         mock_pm = MagicMock()
         mock_pm.__enter__ = MagicMock(return_value=mock_pm)
         mock_pm.__exit__ = MagicMock(return_value=False)
-        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发"}
+        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发", "data": json.dumps({"description": "已有JD"}), "security_id": "sec1"}
         mock_pm.get_ai_results.return_value = []
         mock_pm_cls.return_value = mock_pm
 
@@ -473,7 +473,7 @@ class TestGenerateResumeHighLevel:
         mock_pm = MagicMock()
         mock_pm.__enter__ = MagicMock(return_value=mock_pm)
         mock_pm.__exit__ = MagicMock(return_value=False)
-        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发"}
+        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发", "data": json.dumps({"description": "已有JD"}), "security_id": "sec1"}
         mock_pm.get_ai_results.return_value = []
         mock_pm_cls.return_value = mock_pm
 
@@ -509,7 +509,7 @@ class TestGenerateResumeHighLevel:
         mock_pm = MagicMock()
         mock_pm.__enter__ = MagicMock(return_value=mock_pm)
         mock_pm.__exit__ = MagicMock(return_value=False)
-        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发"}
+        mock_pm.get_job.return_value = {"job_id": "job1", "job_name": "Python开发", "data": json.dumps({"description": "已有JD"}), "security_id": "sec1"}
         mock_pm.get_ai_results.return_value = []
         mock_pm_cls.return_value = mock_pm
 
@@ -524,8 +524,9 @@ class TestGenerateResumeHighLevel:
 
 
 class TestEnsureJobDescription:
+    @patch("boss_career_ops.agent.tools.time.sleep")
     @patch("boss_career_ops.agent.tools.get_active_adapter")
-    def test_adapter_returns_none_logs_warning(self, mock_get_adapter, caplog):
+    def test_adapter_returns_none_writes_fetch_failed(self, mock_get_adapter, mock_sleep, caplog):
         import logging
 
         mock_pm = MagicMock()
@@ -538,12 +539,13 @@ class TestEnsureJobDescription:
         with caplog.at_level(logging.WARNING):
             _ensure_job_description(mock_pm, job)
 
-        mock_adapter.get_job_detail.assert_called_once_with("sec1")
-        mock_pm.update_job_data.assert_not_called()
+        assert mock_adapter.get_job_detail.call_count == 3
+        mock_pm.update_job_data.assert_called_once_with("job1", {"jd_status": "fetch_failed"})
         assert any("接口返回空" in r.message for r in caplog.records)
 
+    @patch("boss_career_ops.agent.tools.time.sleep")
     @patch("boss_career_ops.agent.tools.get_active_adapter")
-    def test_adapter_returns_job_without_description_logs_warning(self, mock_get_adapter, caplog):
+    def test_adapter_returns_job_without_description_writes_fetch_failed(self, mock_get_adapter, mock_sleep, caplog):
         import logging
         from boss_career_ops.platform.models import Job
 
@@ -558,11 +560,13 @@ class TestEnsureJobDescription:
         with caplog.at_level(logging.WARNING):
             _ensure_job_description(mock_pm, job)
 
-        mock_pm.update_job_data.assert_not_called()
+        assert mock_adapter.get_job_detail.call_count == 3
+        mock_pm.update_job_data.assert_called_once_with("job1", {"jd_status": "fetch_failed"})
         assert any("接口返回数据但无 description" in r.message for r in caplog.records)
 
+    @patch("boss_career_ops.agent.tools.time.sleep")
     @patch("boss_career_ops.agent.tools.get_active_adapter")
-    def test_adapter_raises_exception_logs_warning(self, mock_get_adapter, caplog):
+    def test_adapter_raises_exception_writes_fetch_failed(self, mock_get_adapter, mock_sleep, caplog):
         import logging
 
         mock_pm = MagicMock()
@@ -575,15 +579,18 @@ class TestEnsureJobDescription:
         with caplog.at_level(logging.WARNING):
             _ensure_job_description(mock_pm, job)
 
-        mock_pm.update_job_data.assert_not_called()
+        assert mock_adapter.get_job_detail.call_count == 3
+        mock_pm.update_job_data.assert_called_once_with("job1", {"jd_status": "fetch_failed"})
         assert any("连接超时" in r.message for r in caplog.records)
 
+    @patch("boss_career_ops.agent.tools.time.sleep")
     @patch("boss_career_ops.agent.tools.get_active_adapter")
-    def test_adapter_returns_job_with_description_updates_pipeline(self, mock_get_adapter):
+    @patch("boss_career_ops.agent.tools.PipelineManager._extract_job_data")
+    def test_adapter_returns_job_with_description_updates_pipeline(self, mock_extract, mock_get_adapter, mock_sleep):
         from boss_career_ops.platform.models import Job
 
         mock_pm = MagicMock()
-        mock_pm._extract_job_data.return_value = {"description": "JD内容", "skills": ["Python"]}
+        mock_extract.return_value = {"description": "JD内容", "skills": ["Python"]}
 
         mock_adapter = MagicMock()
         api_job = Job(job_id="job1", security_id="sec1", job_name="Python开发", description="JD内容")
@@ -595,19 +602,29 @@ class TestEnsureJobDescription:
         _ensure_job_description(mock_pm, job)
 
         mock_pm.update_job_data.assert_called_once()
+        update_data = mock_pm.update_job_data.call_args[0][1]
+        assert update_data["jd_status"] == "ok"
 
-    def test_skips_when_description_already_present(self):
+    def test_writes_jd_status_ok_when_description_already_present(self):
         mock_pm = MagicMock()
         job = {"job_id": "job1", "security_id": "sec1", "data": json.dumps({"description": "已有JD"})}
 
         _ensure_job_description(mock_pm, job)
 
-        mock_pm.update_job_data.assert_not_called()
+        mock_pm.update_job_data.assert_called_once_with("job1", {"jd_status": "ok"})
 
-    def test_skips_when_no_security_id(self):
+    def test_no_update_when_description_and_status_already_set(self):
         mock_pm = MagicMock()
-        job = {"job_id": "job1", "data": "{}"}
+        job = {"job_id": "job1", "security_id": "sec1", "data": json.dumps({"description": "已有JD", "jd_status": "ok"})}
 
         _ensure_job_description(mock_pm, job)
 
         mock_pm.update_job_data.assert_not_called()
+
+    def test_writes_jd_status_missing_when_no_security_id(self):
+        mock_pm = MagicMock()
+        job = {"job_id": "", "security_id": "", "data": "{}"}
+
+        _ensure_job_description(mock_pm, job)
+
+        mock_pm.update_job_data.assert_called_once_with("", {"jd_status": "missing"})

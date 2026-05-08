@@ -23,6 +23,9 @@ class Job:
     brand_stage: str = ""
     brand_scale: str = ""
     brand_industry: str = ""
+    experience_range: tuple[int, int] | None = None
+    education_level: int | None = None
+    brand_scale_range: tuple[int, int] | None = None
     raw_data: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -44,6 +47,9 @@ class Job:
             "brand_stage": self.brand_stage,
             "brand_scale": self.brand_scale,
             "brand_industry": self.brand_industry,
+            "experience_range": self.experience_range,
+            "education_level": self.education_level,
+            "brand_scale_range": self.brand_scale_range,
         }
 
     @classmethod
