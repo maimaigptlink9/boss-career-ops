@@ -1,3 +1,5 @@
+import pytest
+
 from boss_career_ops.errors import (
     BCOError,
     ConfigError,
@@ -7,8 +9,6 @@ from boss_career_ops.errors import (
     EvaluationError,
     Result,
 )
-from boss_career_ops.web.server import app
-from fastapi.testclient import TestClient
 
 
 class TestBCOError:
@@ -89,6 +89,7 @@ class TestResult:
 
 class TestFastAPIExceptionHandler:
     def test_bco_error_returns_400(self):
+        pytest.importorskip("fastapi")
         from boss_career_ops.web.server import bco_error_handler
         from unittest.mock import MagicMock
         import json
@@ -103,6 +104,7 @@ class TestFastAPIExceptionHandler:
         assert body["code"] == "TEST_CODE"
 
     def test_subclass_error_returns_400(self):
+        pytest.importorskip("fastapi")
         from boss_career_ops.web.server import bco_error_handler
         from unittest.mock import MagicMock
         import json

@@ -2,6 +2,8 @@ import json
 from unittest.mock import patch, MagicMock
 
 import pytest
+
+pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
 from boss_career_ops.web.server import app
