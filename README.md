@@ -1,10 +1,8 @@
 # Boss-Career-Ops
 
-BOSS 直聘 AI 求职全流程 CLI 工具。覆盖从职位搜索到拿到 offer 的完整闭环。
+BOSS 直聘求职全流程 CLI 工具。覆盖从职位搜索到拿到 offer 的完整闭环。
 
-**核心原则：AI 评估推荐，人决定行动。系统自动执行高分职位，低分职位需人工确认。**
-
-**AI 编排：AI 任务（评估/润色/摘要/面试准备）由 Agent 直接完成，无需配置外部 LLM API。**
+**核心原则：规则引擎评估推荐，人决定行动。系统自动执行高分职位，低分职位需人工确认。**
 
 ## 功能概览
 
@@ -13,10 +11,10 @@ BOSS 直聘 AI 求职全流程 CLI 工具。覆盖从职位搜索到拿到 offer
 - **阈值驱动** — batch-greet 内置阈值逻辑，B 级自动打招呼，D 级自动跳过
 - **简历定制** — 根据职位 JD 生成 ATS 友好的 MD/PDF 简历，关键词注入
 - **批量打招呼** — 高斯随机延迟 + 随机长停顿，最大 10 个，防封号
-- **聊天管理** — 消息历史、AI 摘要、标签、导出
+- **聊天管理** — 消息历史、摘要、标签、导出
 - **求职流水线** — 发现→评估→投递→沟通→面试→offer 全程追踪，所有操作结果自动入库
 - **面试准备** — 基于职位信息生成面试要点
-- **Web 仪表盘** — AI 求职决策仪表盘，5 维评分可视化、Pipeline 看板、AI 助手、零配置可用
+- **Web 仪表盘** — 求职决策仪表盘，5 维评分可视化、Pipeline 看板、零配置可用
 - **TUI Dashboard** — 终端可视化求职看板
 
 ## 快速开始
@@ -130,33 +128,6 @@ bco web
 | `bco bridge test` | Bridge 连通性诊断（3 步检查） |
 | `bco skill-update` | 检查远程版本并获取最新 skill.md 内容 |
 
-### Agent AI 任务
-
-| 命令 | 说明 |
-|------|------|
-| `bco agent "帮我找深圳的Agent岗位"` | AI Agent 对话式求职助手（LangGraph 多Agent编排） |
-| `bco agent --interactive` | 交互模式，持续对话 |
-| `bco agent-evaluate <job_id>` | 输出职位数据供 Agent 评估 |
-| `bco agent-evaluate --stage 发现 --limit 10` | 输出待评估职位列表 |
-| `bco agent-save evaluate --job-id <id> --score <n> --grade <G> --analysis "..."` | 保存评估结果 |
-| `bco agent-save resume --job-id <id> --content "..."` | 保存简历润色结果 |
-| `bco agent-save chat-summary --security-id <id> --data '...'` | 保存聊天摘要 |
-| `bco agent-save interview-prep --job-id <id> --data '...'` | 保存面试准备 |
-
-### RAG 知识库
-
-| 命令 | 说明 |
-|------|------|
-| `bco rag-index` | 构建/更新 RAG 知识库索引（从 Pipeline DB 读取 JD） |
-| `bco rag-index --reindex` | 全量重建索引 |
-| `bco rag-search "AI Agent 开发" --collection jd --top-k 10` | RAG 语义搜索（jd/resume/interview） |
-
-### MCP Server
-
-| 命令 | 说明 |
-|------|------|
-| `bco mcp-server` | 启动 MCP Server（供 Claude Desktop 等客户端调用） |
-
 ### 职位搜索与评估
 
 | 命令 | 说明 |
@@ -199,7 +170,7 @@ bco web
 |------|------|
 | `bco interview <job_id>` | 面试准备 |
 | `bco dashboard` | 启动 TUI Dashboard |
-| `bco web` | 启动 Web 仪表盘（AI 求职决策仪表盘，零配置可用） |
+| `bco web` | 启动 Web 仪表盘（求职决策仪表盘，零配置可用） |
 
 ## 配置
 
@@ -254,74 +225,25 @@ cache:
   search_ttl: 1800             # 搜索缓存 TTL（秒）
 ```
 
-## AI Agent 集成
-
-本工具专为 AI Agent 设计，AI 任务由 Agent 直接完成，无需配置外部 LLM API。
-
-### 零配置可用
-
-系统采用「规则引擎开箱即用 + AI 无缝升级」策略：
-
-- **不配置 AI** → 规则引擎模式：5 维评分、A/B/C/D/F 等级、推荐语、技能同义词匹配、ATS 关键词注入、Pipeline 看板，覆盖 80% 核心价值
-- **配置 AI** → AI 增强模式：AI 评估覆盖规则评分、AI 简历润色、AI 聊天摘要、AI 回复建议、AI 面试准备
-
-AI 配置支持 Web 设置页（30 秒完成）和环境变量两种方式，优先级：环境变量 > ai_config.yml > 规则引擎。
-
-### 工作原理
-
-```
-Agent 读取数据（bco agent-evaluate / bco chatmsg）
-  → Agent 思考分析（评估/润色/摘要/面试准备）
-  → Agent 写入结果（bco agent-save）
-  → 后续命令读取 Agent 结果（bco evaluate / bco resume / bco interview）
-```
-
-### Agent 工具命令
-
-- `bco agent-evaluate` — 输出职位数据供 Agent 评估分析
-- `bco agent-save` — 保存 Agent 的 AI 分析结果到数据库
-
-### Skill 集成
-
-将 [skills/boss-career-ops/skill.md](skills/boss-career-ops/skill.md) 放到对应 Agent 的 skill 目录即可自动理解并调用 `bco` 命令：
-
-**OpenClaw：**
-
-```bash
-mkdir -p ~/.openclaw/skills/boss-career-ops && cp skills/boss-career-ops/skill.md ~/.openclaw/skills/boss-career-ops/skill.md
-```
-
-**Claude Code：**
-
-在项目目录中打开 Claude Code，`CLAUDE.md` 会自动加载为上下文。
-
-**WorkBuddy：**
-
-```bash
-cp skills/boss-career-ops/skill.md ~/.workbuddy/skills/boss-career-ops/skill.md
-```
-
 ## Web 仪表盘
 
-`bco web` 启动 AI 求职决策仪表盘（FastAPI + Alpine.js），定位是 AI 智能层的可视化，不是 BOSS 网页的复刻。
+`bco web` 启动求职决策仪表盘（FastAPI + Alpine.js），定位是评分和 Pipeline 的可视化，不是 BOSS 网页的复刻。
 
 ### 核心页面
 
 | 页面 | 功能 | BOSS 网页可替代 |
 |------|------|-----------------|
 | 决策看板 | Pipeline 看板 + 5 维评分卡片 + 优劣势分析 + 待办 | ❌ |
-| AI 助手 | 回复建议 + 简历定制 + 面试准备 + 技能差距 | ❌ |
-| 设置 | AI Key 配置引导 + 个人档案编辑 | ❌ |
+| 设置 | 个人档案编辑 + 阈值配置 | ❌ |
 
 ### 技术架构
 
 ```
-浏览器 → FastAPI (web/server.py) → agent/tools.py → PipelineManager / BossAdapter / EvaluationEngine
+浏览器 → FastAPI (web/server.py) → PipelineManager / BossAdapter / EvaluationEngine
 ```
 
-- 后端：FastAPI，所有业务逻辑通过 `agent/tools.py` 调用
+- 后端：FastAPI，业务逻辑通过 `pipeline/manager.py`、`pipeline/analytics.py` 调用
 - 前端：Alpine.js (CDN) + 原生 JS，暗色主题，无构建工具
-- AI 配置：Web 设置页配置 API Key，Provider 信息从 `data/llm_providers.yml` 读取
 - 安全：默认绑定 `127.0.0.1`，API Key Fernet 加密存储，写操作需认证
 
 ## 安全说明
@@ -336,59 +258,6 @@ cp skills/boss-career-ops/skill.md ~/.workbuddy/skills/boss-career-ops/skill.md
 - 敏感信息不输出到日志
 - CSV 导出防止公式注入，文件导出防止路径遍历
 - Web 仪表盘默认绑定 `127.0.0.1`，写操作需 `BCO_WEB_API_KEY` 认证
-
-## 系统升级路线图
-
-> 目标：将现有 CLI 自动化工具升级为真正的 AI Agent 系统，同时满足「求职实用」和「面试证明 Agent 开发能力」两个目标。
-
-### 已完成改造
-
-| 改造 | 状态 | 核心变化 | 详细文档 |
-|------|------|----------|----------|
-| LangGraph 多Agent编排 | ✅ 已完成 | Agent I/O 数据通道 → StateGraph + Conditional Edge 路由，6 个专业 Agent 节点 | [upgrade-langgraph.md](doc/upgrade-langgraph.md) |
-| RAG 知识库 | ✅ 已完成 | 关键词匹配 → ChromaDB 语义向量检索 + MMR 重排 | [upgrade-rag.md](doc/upgrade-rag.md) |
-| MCP Server | ✅ 已完成 | CLI 命令行 → MCP 协议（JSON-RPC over stdio），9 Tool + 3 Resource | [upgrade-mcp.md](doc/upgrade-mcp.md) |
-| 规则引擎评估改进 | ✅ 已完成 | 评分区分度提升、全行业同义词表、匹配原因输出、薪资连续评分、邻近城市 | [规则引擎评估改进方案.md](doc/规则引擎评估改进方案.md) |
-| Web 仪表盘 | ✅ 已完成 | AI 求职决策仪表盘，5 维评分可视化、Pipeline 看板、AI 助手、零配置可用 | [Web前端方案.md](doc/Web前端方案.md) |
-| Web 与 CLI 对齐 | ✅ 已完成 | agent/tools.py 增强，Pipeline 阶段推进、搜索入库、简历 PDF 生成修复 | [web-cli-alignment.md](doc/web-cli-alignment.md) |
-| 风控对抗增强 | ✅ 已完成 | QR httpx 登录、浏览器通道节流、随机长停顿、Cookie 回写、Token 自动刷新 | [风控对抗实现对比分析.md](doc/风控对抗实现对比分析.md) |
-
-### 进行中改进
-
-| 改造 | 状态 | 核心变化 | 详细文档 |
-|------|------|----------|----------|
-| Web 功能补全 | 🔄 进行中 | 搜索页面、投递按钮、聊天页面、简历预览、面试准备、数据分析 | [web-completion-plan.md](doc/web-completion-plan.md) |
-| 功能广度补全 | 🔄 进行中 | detail 命令、搜索缓存、登出、搜索预设/监控、日报/跟进 | [功能对比分析.md](doc/功能对比分析.md) |
-
-### 新增依赖
-
-`pyproject.toml` 的 dependencies 已新增：`langchain>=0.3`、`langgraph>=0.2`、`langchain-openai>=0.2`、`chromadb>=0.5`、`mcp>=1.0`
-
-### LLM 配置
-
-| 环境变量 | 说明 | 默认值 |
-|----------|------|--------|
-| `BCO_LLM_PROVIDER` | LLM 提供者（openai/deepseek/local） | deepseek |
-| `BCO_LLM_API_KEY` | API Key | — |
-| `BCO_LLM_BASE_URL` | API Base URL（兼容 OpenAI 接口） | — |
-| `BCO_LLM_MODEL` | 模型名 | deepseek-chat |
-
-也可通过 Web 设置页（`bco web` → 设置 → AI 配置）配置，API Key 加密存储到 `~/.bco/ai_config.yml`。优先级：环境变量 > ai_config.yml > 规则引擎。
-
-### Claude Desktop 集成
-
-```json
-{
-  "mcpServers": {
-    "boss-career-ops": {
-      "command": "bco",
-      "args": ["mcp-server"]
-    }
-  }
-}
-```
-
----
 
 ## 参考项目
 

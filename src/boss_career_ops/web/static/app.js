@@ -40,6 +40,8 @@ function app() {
         resumeLoading: false,
         interviewPrep: null,
         interviewLoading: false,
+        skillGapData: null,
+        skillGapLoading: false,
         analyticsData: null,
         salaryDistribution: {},
         gradeDistribution: {},
@@ -686,6 +688,26 @@ function app() {
                 }
             } catch (e) { this.showToast('面试准备失败', 'error'); }
             finally { this.interviewLoading = false; }
+        },
+
+        async analyzeSkillGap() {
+            this.skillGapLoading = true;
+            this.skillGapData = null;
+            try {
+                const res = await fetch('/api/skill-gap/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}),
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    this.skillGapData = data.data;
+                    this.showToast('技能差距分析完成', 'success');
+                } else {
+                    this.showToast('技能差距分析失败：' + data.error, 'error');
+                }
+            } catch (e) { this.showToast('技能差距分析失败', 'error'); }
+            finally { this.skillGapLoading = false; }
         },
 
         async sendReplySuggest() {
