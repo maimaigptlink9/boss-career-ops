@@ -21,7 +21,7 @@ class TestNoDeletedCommandReferences:
         for f in SRC_DIR.rglob("*"):
             if f.suffix not in (".py", ".html", ".js", ".css"):
                 continue
-            content = f.read_text(encoding="utf-8", errors="ignore")
+            content = f.read_text(encoding="utf-8", errors="replace")
             for cmd in DELETED_COMMANDS:
                 if re.search(rf"\b{re.escape(cmd)}\b", content):
                     rel = f.relative_to(SRC_DIR)
