@@ -450,5 +450,8 @@ class BossClient(metaclass=SingletonMeta):
     def get(self, endpoint_name: str, params: dict | None = None) -> dict:
         return self.request(endpoint_name, params=params)
 
+    def get_job_card(self, security_id: str, lid: str = "") -> dict:
+        return self.get("job_card", params={"securityId": security_id, "lid": lid})
+
     def post(self, endpoint_name: str, json_data: dict | None = None, params: dict | None = None) -> dict:
         return self.request(endpoint_name, params=params, json_data=json_data)

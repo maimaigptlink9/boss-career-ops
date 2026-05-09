@@ -12,6 +12,11 @@ endpoints:
     method: GET
     description: "职位详情"
 
+  job_card:
+    path: "/wapi/zpgeek/job/card.json"
+    method: GET
+    description: "职位卡片（详情降级通道）"
+
   greet:
     path: "/wapi/zpgeek/friend/addchatfriend.json"
     method: POST

@@ -19,8 +19,11 @@ class PlatformAdapter(ABC):
         ...
 
     @abstractmethod
-    def get_job_detail(self, security_id: str) -> Job | None:
+    def get_job_detail(self, job_id: str, security_id: str = "", lid: str = "") -> Job | None:
         ...
+
+    def get_job_card(self, security_id: str, lid: str = "") -> Job | None:
+        raise NotImplementedError(f"{self.__class__.__name__} does not implement get_job_card")
 
     @abstractmethod
     def greet(self, security_id: str, job_id: str) -> OperationResult:

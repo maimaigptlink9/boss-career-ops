@@ -7,8 +7,6 @@ from boss_career_ops.config.settings import RESUMES_DIR, Settings
 from boss_career_ops.display.output import output_json, output_error
 from boss_career_ops.display.logger import get_logger
 from boss_career_ops.pipeline.manager import PipelineManager
-import json
-
 logger = get_logger(__name__)
 
 
@@ -42,18 +40,7 @@ def run_resume(job_id: str, fmt: str, upload: bool = False):
             return
         job_dict = job.to_dict()
         generator = ResumeGenerator()
-        resume_md = None
-        # 检查 Agent 润色结果
-        try:
-            with PipelineManager() as pm:
-                ai_result = pm.get_ai_result(job_id, "resume")
-                if ai_result:
-                    ai_data = json.loads(ai_result["result"])
-                    resume_md = ai_data.get("content", "")
-        except Exception as e:
-            logger.warning("读取 Agent 简历润色结果失败: %s", e)
-        if not resume_md:
-            resume_md = generator.generate(job_dict)
+        resume_md = generator.generate(job_dict)
         if not resume_md:
             output_error(command="resume", message="简历文件 ~/.bco/cv.md 不存在，请先创建。可运行 bco setup 初始化模板", code="CV_NOT_FOUND")
             return

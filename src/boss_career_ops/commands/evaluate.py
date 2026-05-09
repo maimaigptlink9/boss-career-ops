@@ -7,8 +7,6 @@ from boss_career_ops.pipeline.stages import Stage
 from boss_career_ops.display.error_codes import ErrorCode
 from boss_career_ops.display.output import output_json, output_error
 from boss_career_ops.display.logger import get_logger
-import json
-
 logger = get_logger(__name__)
 
 
@@ -38,23 +36,6 @@ def _evaluate_single(engine: EvaluationEngine, security_id: str):
             return
         result = engine.evaluate(job)
         report = generate_report(result)
-        # 检查 Agent 评估结果
-        if job.job_id:
-            try:
-                with PipelineManager() as pm:
-                    ai_result = pm.get_ai_result(job.job_id, "evaluate")
-                    if ai_result:
-                        ai_data = json.loads(ai_result["result"])
-                        result["agent_score"] = ai_data.get("score")
-                        result["agent_grade"] = ai_data.get("grade")
-                        result["agent_analysis"] = ai_data.get("analysis")
-                        result["agent_scores_detail"] = ai_data.get("scores_detail")
-                        if ai_data.get("score") is not None and ai_data.get("grade"):
-                            result["total_score"] = ai_data["score"]
-                            result["grade"] = ai_data["grade"]
-                            result["source"] = "agent"
-            except Exception as e:
-                logger.warning("读取 Agent 评估结果失败: %s", e)
         try:
             pm = PipelineManager()
             with pm:
@@ -98,19 +79,6 @@ def _evaluate_from_search(engine: EvaluationEngine):
                 result = engine.evaluate(job)
                 try:
                     job_id = job.job_id if hasattr(job, "job_id") else job.get("encryptJobId", "")
-                    # 检查 Agent 评估结果
-                    if job_id:
-                        try:
-                            ai_result = pm.get_ai_result(job_id, "evaluate")
-                            if ai_result:
-                                ai_data = json.loads(ai_result["result"])
-                                if ai_data.get("score") is not None and ai_data.get("grade"):
-                                    result["total_score"] = ai_data["score"]
-                                    result["grade"] = ai_data["grade"]
-                                    result["source"] = "agent"
-                                    result["agent_analysis"] = ai_data.get("analysis")
-                        except Exception as e:
-                            logger.warning("读取 Agent 评估结果失败: %s", e)
                     if job_id:
                         pm.update_score(job_id, result["total_score"], result["grade"])
                         pm.update_stage(job_id, Stage.EVALUATED)
@@ -146,17 +114,6 @@ def _evaluate_pending(engine: EvaluationEngine):
                     result = engine.evaluate(job_dict)
                     job_id = job_dict.get("job_id", "")
                     if job_id:
-                        try:
-                            ai_result = pm.get_ai_result(job_id, "evaluate")
-                            if ai_result:
-                                ai_data = json.loads(ai_result["result"])
-                                if ai_data.get("score") is not None and ai_data.get("grade"):
-                                    result["total_score"] = ai_data["score"]
-                                    result["grade"] = ai_data["grade"]
-                                    result["source"] = "agent"
-                                    result["agent_analysis"] = ai_data.get("analysis")
-                        except Exception as e:
-                            logger.warning("读取 Agent 评估结果失败: %s", e)
                         pm.update_score(job_id, result["total_score"], result["grade"])
                         pm.update_stage(job_id, Stage.EVALUATED)
                         report = generate_report(result)

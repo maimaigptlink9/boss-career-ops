@@ -1,4 +1,5 @@
 import json
+import random
 import sqlite3
 import threading
 import time
@@ -11,6 +12,7 @@ from boss_career_ops.config.singleton import SingletonMeta
 from boss_career_ops.pipeline.stages import Stage
 from boss_career_ops.display.logger import get_logger
 from boss_career_ops.platform.models import Job
+from boss_career_ops.platform.registry import get_active_adapter
 
 logger = get_logger(__name__)
 
@@ -35,6 +37,9 @@ _AI_RESULT_SELECT = ", ".join(_AI_RESULT_COLS)
 
 _DB_LOCK_RETRIES = 3
 _DB_LOCK_DELAY = 0.05
+
+_JD_MAX_RETRIES = 3
+_JD_RETRY_BASE_DELAY = 2.0
 
 
 class PipelineManager(metaclass=SingletonMeta):
@@ -213,6 +218,8 @@ class PipelineManager(metaclass=SingletonMeta):
         data = {}
         if job.description:
             data["description"] = job.description
+        if job.raw_data.get("lid"):
+            data["lid"] = job.raw_data["lid"]
         if job.skills:
             data["skills"] = job.skills
         if job.city_name:
@@ -481,6 +488,96 @@ class PipelineManager(metaclass=SingletonMeta):
             (STATUS_ACTIVE, Stage.DISCOVERED.value, limit),
         )
         return [dict(zip(_PIPELINE_COLS, row)) for row in cursor.fetchall()]
+
+    def get_job_detail(self, job_id: str) -> dict | None:
+        if not self._conn:
+            raise RuntimeError("PipelineManager 未打开")
+        job = self.get_job(job_id)
+        if job is None:
+            return None
+        ai_results = self.get_ai_results(job_id)
+        if ai_results:
+            job["ai_results"] = ai_results
+        self._ensure_job_description(job)
+        return job
+
+    def _ensure_job_description(self, job: dict) -> None:
+        data = {}
+        try:
+            data = json.loads(job.get("data", "{}"))
+        except (json.JSONDecodeError, TypeError):
+            pass
+        if data.get("description"):
+            if not data.get("jd_status"):
+                self.update_job_data(job["job_id"], {"jd_status": "ok"})
+            return
+        job_id = job.get("job_id", "")
+        security_id = job.get("security_id", "")
+        lid = data.get("lid", "")
+        if not job_id and not security_id:
+            self.update_job_data(job["job_id"], {"jd_status": "missing"})
+            return
+        for attempt in range(_JD_MAX_RETRIES):
+            try:
+                adapter = get_active_adapter()
+                api_job = adapter.get_job_detail(job_id, security_id=security_id, lid=lid)
+                if api_job is None:
+                    logger.warning(
+                        "从 API 补拉 JD 失败 (尝试 %d/%d): %s - 接口返回空",
+                        attempt + 1, _JD_MAX_RETRIES, job["job_id"],
+                    )
+                    if attempt < _JD_MAX_RETRIES - 1:
+                        delay = _JD_RETRY_BASE_DELAY * (2 ** attempt) + random.uniform(0, 1)
+                        time.sleep(delay)
+                        continue
+                    self.update_job_data(job["job_id"], {"jd_status": "fetch_failed"})
+                    return
+                if not api_job.description:
+                    if api_job.raw_data.get("_risk_blocked"):
+                        logger.warning(
+                            "从 API 补拉 JD 被风控拦截且浏览器降级失败 (尝试 %d/%d): %s",
+                            attempt + 1, _JD_MAX_RETRIES, job["job_id"],
+                        )
+                        if attempt < _JD_MAX_RETRIES - 1:
+                            delay = _JD_RETRY_BASE_DELAY * (2 ** attempt) + random.uniform(0, 1)
+                            time.sleep(delay)
+                            continue
+                        self.update_job_data(job["job_id"], {"jd_status": "blocked"})
+                        return
+                    logger.warning(
+                        "从 API 补拉 JD 失败 (尝试 %d/%d): %s - 接口返回数据但无 description",
+                        attempt + 1, _JD_MAX_RETRIES, job["job_id"],
+                    )
+                    if attempt < _JD_MAX_RETRIES - 1:
+                        delay = _JD_RETRY_BASE_DELAY * (2 ** attempt) + random.uniform(0, 1)
+                        time.sleep(delay)
+                        continue
+                    self.update_job_data(job["job_id"], {"jd_status": "fetch_failed"})
+                    return
+                if api_job.raw_data.get("_browser_fetched"):
+                    data_source = "browser_fetch"
+                elif api_job.raw_data.get("_card_fetched"):
+                    data_source = "card_api"
+                else:
+                    data_source = "detail_api"
+                update_data = self._extract_job_data(api_job, data_source=data_source)
+                update_data["jd_status"] = "ok"
+                self.update_job_data(job["job_id"], update_data)
+                data.update(update_data)
+                job["data"] = json.dumps(data, ensure_ascii=False)
+                logger.info("从 API 补拉 JD 成功: %s", job["job_id"])
+                return
+            except Exception as e:
+                logger.warning(
+                    "从 API 补拉 JD 失败 (尝试 %d/%d): %s - %s",
+                    attempt + 1, _JD_MAX_RETRIES, job["job_id"], e,
+                )
+                if attempt < _JD_MAX_RETRIES - 1:
+                    delay = _JD_RETRY_BASE_DELAY * (2 ** attempt) + random.uniform(0, 1)
+                    time.sleep(delay)
+                    continue
+                self.update_job_data(job["job_id"], {"jd_status": "fetch_failed"})
+                return
 
     def is_dismissed(self, job_id: str) -> bool:
         if not self._conn:

@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 def _sanitize_path(output: str) -> Path:
     p = Path(output)
-    if p.is_absolute() or ".." in p.parts:
+    if p.is_absolute() or ".." in p.parts or (len(output) > 1 and output[0] == "/"):
         raise ValueError("导出路径不安全：不允许绝对路径或路径遍历")
     return p
 

@@ -74,7 +74,13 @@ class BossAdapter(PlatformAdapter):
             logger.error("搜索失败: code=%s, message=%s", resp.get("code"), resp.get("message"))
             return []
         job_list = resp.get("zpData", {}).get("jobList", [])
-        return [self._mapper.map_job(j) for j in job_list]
+        jobs = []
+        for j in job_list:
+            job = self._mapper.map_job(j)
+            if j.get("lid"):
+                job.raw_data["lid"] = j["lid"]
+            jobs.append(job)
+        return jobs
 
     def _search_via_browser(self, params: dict[str, Any]) -> list[Job]:
         try:
@@ -133,31 +139,62 @@ class BossAdapter(PlatformAdapter):
             result = api_response.get("data")
             if result and result.get("code") == 0:
                 job_list = result.get("zpData", {}).get("jobList", [])
-                return [self._mapper.map_job(j) for j in job_list]
+                jobs = []
+                for j in job_list:
+                    job = self._mapper.map_job(j)
+                    if j.get("lid"):
+                        job.raw_data["lid"] = j["lid"]
+                    jobs.append(job)
+                return jobs
         except Exception as e:
             logger.warning("浏览器通道搜索失败: %s", e)
         return []
 
-    def get_job_detail(self, security_id: str) -> Job | None:
-        resp = self._client.get("job_detail", params={"encryptJobId": security_id})
+    def get_job_detail(self, job_id: str, security_id: str = "", lid: str = "") -> Job | None:
+        resp = self._client.get("job_detail", params={"encryptJobId": job_id})
+        if not resp.get("_risk_blocked") and resp.get("code") == 0:
+            zp_data = resp.get("zpData", {})
+            job_info = zp_data.get("jobInfo", {})
+            if job_info:
+                job_detail_text = zp_data.get("jobDetail", "")
+                if job_detail_text:
+                    job_info["jobDetail"] = job_detail_text
+                job_info["securityId"] = security_id
+                return self._mapper.map_job(job_info)
+
         if resp.get("_risk_blocked"):
-            logger.warning("获取职位详情被风控拦截，尝试浏览器通道降级: %s", security_id)
-            job = self._get_job_detail_via_browser(security_id)
-            if job is None:
-                return Job(raw_data={"_risk_blocked": True})
-            job.raw_data["_browser_fetched"] = True
-            return job
+            logger.warning("获取职位详情被风控拦截: %s", job_id)
+        else:
+            logger.warning("获取职位详情失败: code=%s, job_id=%s", resp.get("code"), job_id)
+
+        if security_id:
+            logger.info("尝试 job_card 降级通道: security_id=%s", security_id[:20])
+            card_job = self.get_job_card(security_id, lid)
+            if card_job is not None:
+                card_job.raw_data["_card_fetched"] = True
+                return card_job
+
+        job = self._get_job_detail_via_browser(security_id, job_id=job_id)
+        if job is None:
+            return Job(raw_data={"_risk_blocked": True})
+        job.raw_data["_browser_fetched"] = True
+        return job
+
+    def get_job_card(self, security_id: str, lid: str = "") -> Job | None:
+        resp = self._client.get_job_card(security_id, lid)
+        if resp.get("_risk_blocked"):
+            logger.warning("获取职位卡片被风控拦截: %s", security_id)
+            return None
         if resp.get("code") != 0:
             return None
-        job_info = resp.get("zpData", {}).get("jobInfo", {})
-        if not job_info:
+        job_card = resp.get("zpData", {}).get("jobCard", {})
+        if not job_card:
             return None
-        job_info["securityId"] = security_id
-        return self._mapper.map_job(job_info)
+        job_card["securityId"] = security_id
+        return self._mapper.map_job(job_card)
 
-    def _get_job_detail_via_browser(self, security_id: str) -> Job | None:
+    def _get_job_detail_via_browser(self, security_id: str, job_id: str = "") -> Job | None:
         try:
-            import json as _json
             import urllib.parse
 
             browser = self._browser
@@ -178,6 +215,14 @@ class BossAdapter(PlatformAdapter):
             page_obj.goto("https://www.zhipin.com", wait_until="domcontentloaded")
             page_obj.wait_for_timeout(1000)
             browser.add_cookies(cookies_for_browser)
+
+            # 方案 A: 先尝试 JS fetch（带 __zp_stoken__ 参数）
+            stoken = tokens.get("__zp_stoken__", "")
+            fetch_url = f"/wapi/zpgeek/job/detail.json?encryptJobId={urllib.parse.quote(security_id)}"
+            if stoken:
+                # stoken 可能已 URL 编码（含 %2B 等），需先解码再重新编码，避免双重编码
+                decoded_stoken = urllib.parse.unquote(stoken)
+                fetch_url += f"&__zp_stoken__={urllib.parse.quote(decoded_stoken, safe='')}"
             page_obj.goto(
                 "https://www.zhipin.com/web/geek/job?query=",
                 wait_until="domcontentloaded",
@@ -185,7 +230,6 @@ class BossAdapter(PlatformAdapter):
             )
             page_obj.wait_for_timeout(3000)
 
-            fetch_url = f"/wapi/zpgeek/job/detail.json?encryptJobId={urllib.parse.quote(security_id)}"
             js_code = f"""
             async () => {{
                 try {{
@@ -204,19 +248,120 @@ class BossAdapter(PlatformAdapter):
             }}
             """
             result = page_obj.evaluate(js_code)
+
+            if result and isinstance(result, dict) and result.get("code") == 0:
+                job_info = result.get("zpData", {}).get("jobInfo", {})
+                if job_info:
+                    job_info["securityId"] = security_id
+                    page_obj.close()
+                    logger.info("浏览器通道获取职位详情成功 (fetch): %s", security_id[:20])
+                    return self._mapper.map_job(job_info)
+
+            # 方案 B: fetch 失败，降级为导航到详情页抓取 DOM
+            # 用页面拦截方式：导航到搜索页，拦截详情 API 响应
+            logger.info("fetch 未获取到 JD，尝试页面拦截方式: %s", security_id[:20])
+
+            api_response = {}
+
+            def _handle_detail_response(response):
+                url = response.url
+                if "job/detail.json" in url and security_id[:30] in url:
+                    try:
+                        data = response.json()
+                        if data.get("code") == 0:
+                            api_response["data"] = data
+                    except Exception:
+                        pass
+
+            page_obj.on("response", _handle_detail_response)
+            page_obj.goto(
+                "https://www.zhipin.com/web/geek/job?query=",
+                wait_until="domcontentloaded",
+                timeout=15000,
+            )
+            page_obj.wait_for_timeout(3000)
+
+            # 用 JS 直接调用详情 API（页面原生方式，带完整 cookie 和 token）
+            js_detail_code = f"""
+            async () => {{
+                try {{
+                    const resp = await fetch("/wapi/zpgeek/job/detail.json?encryptJobId={urllib.parse.quote(security_id)}", {{
+                        method: "GET",
+                        credentials: "include",
+                        headers: {{
+                            "Accept": "application/json",
+                            "X-Requested-With": "XMLHttpRequest",
+                        }},
+                    }});
+                    const data = await resp.json();
+                    return data;
+                }} catch (e) {{
+                    return {{_fetch_error: e.message}};
+                }}
+            }}
+            """
+            detail_result = page_obj.evaluate(js_detail_code)
+            page_obj.remove_listener("response", _handle_detail_response)
+
+            # 检查拦截到的或 JS 调用返回的结果
+            result_to_check = api_response.get("data") or detail_result
+            if result_to_check and isinstance(result_to_check, dict) and result_to_check.get("code") == 0:
+                job_info = result_to_check.get("zpData", {}).get("jobInfo", {})
+                if job_info and job_info.get("postDescription"):
+                    job_info["securityId"] = security_id
+                    page_obj.close()
+                    logger.info("浏览器通道获取职位详情成功 (intercept): %s", security_id[:20])
+                    return self._mapper.map_job(job_info)
+
+            # 方案 C: 最后降级 - 直接导航到 job_detail 页面抓取 DOM
+            detail_url_id = job_id if job_id else security_id
+            logger.info("拦截方式也失败，尝试直接导航到详情页: %s (id=%s)", security_id[:20], detail_url_id[:20])
+            page_obj.goto(
+                f"https://www.zhipin.com/job_detail/{urllib.parse.quote(detail_url_id, safe='')}.html",
+                wait_until="domcontentloaded",
+                timeout=15000,
+            )
+            page_obj.wait_for_timeout(5000)
+
+            jd_text = page_obj.evaluate("""
+            () => {
+                const selectors = [
+                    '.job-detail-section .job-sec-text',
+                    '.job-detail .text',
+                    '.job-sec-text',
+                    '[class*="job-detail"] [class*="desc"]',
+                    '.job-detail-bottom .text',
+                ];
+                for (const sel of selectors) {
+                    const el = document.querySelector(sel);
+                    if (el && el.innerText.trim().length > 20) return el.innerText.trim();
+                }
+                // 兜底: 找所有可能的 JD 容器
+                const allDivs = document.querySelectorAll('div');
+                for (const div of allDivs) {
+                    const text = div.innerText.trim();
+                    if (text.length > 100 && (text.includes('岗位职责') || text.includes('任职要求') || text.includes('工作内容') || text.includes('职位描述'))) {
+                        return text;
+                    }
+                }
+                return '';
+            }
+            """)
+
             page_obj.close()
 
-            if result and isinstance(result, dict):
-                if result.get("code") == 0:
-                    job_info = result.get("zpData", {}).get("jobInfo", {})
-                    if job_info:
-                        job_info["securityId"] = security_id
-                        logger.info("浏览器通道获取职位详情成功 (fetch): %s", security_id[:20])
-                        return self._mapper.map_job(job_info)
-                if "_fetch_error" in result:
-                    logger.warning("浏览器 fetch 获取职位详情失败: %s", result["_fetch_error"])
-                else:
-                    logger.warning("浏览器通道获取职位详情失败: code=%s", result.get("code"))
+            if jd_text:
+                raw_data = {
+                    "securityId": security_id,
+                    "postDescription": jd_text,
+                    "_browser_fetched": True,
+                    "_dom_scraped": True,
+                }
+                logger.info("浏览器通道获取职位详情成功 (DOM): %s", security_id[:20])
+                return self._mapper.map_job(raw_data)
+
+            logger.warning("浏览器通道获取职位详情失败: fetch code=%s, DOM 无内容",
+                           result.get("code") if isinstance(result, dict) else "unknown")
         except Exception as e:
             logger.warning("浏览器通道获取职位详情失败: %s", e)
         return None

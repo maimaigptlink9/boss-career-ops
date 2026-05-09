@@ -135,7 +135,7 @@ class BossFieldMapper(FieldMapper):
             education=str(raw_data.get("jobDegree", "")),
             skills=skills,
             job_labels=job_labels,
-            description=str(raw_data.get("postDescription", "")),
+            description=str(raw_data.get("jobDetail", "") or raw_data.get("postDescription", "")),
             brand_stage=str(raw_data.get("brandStageName", "")),
             brand_scale=str(raw_data.get("brandScaleName", "")),
             brand_industry=str(raw_data.get("brandIndustry", "")),

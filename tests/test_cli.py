@@ -117,15 +117,6 @@ class TestCLI:
         result = runner.invoke(cli, ["dashboard", "--help"])
         assert result.exit_code == 0
 
-    def test_agent_evaluate_help(self):
-        runner = CliRunner()
-        result = runner.invoke(cli, ["agent-evaluate", "--help"])
-        assert result.exit_code == 0
-
-    def test_agent_save_help(self):
-        runner = CliRunner()
-        result = runner.invoke(cli, ["agent-save", "--help"])
-        assert result.exit_code == 0
 
 
 class TestDoctorCommand:

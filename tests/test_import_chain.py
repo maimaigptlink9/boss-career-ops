@@ -66,13 +66,6 @@ def test_import_all_commands():
     from boss_career_ops.commands.export import run_export
     from boss_career_ops.commands.interview import run_interview
     from boss_career_ops.commands.dashboard import run_dashboard
-    from boss_career_ops.commands.agent_evaluate import run_agent_evaluate
-    from boss_career_ops.commands.agent_save import (
-        run_agent_save_evaluate,
-        run_agent_save_resume,
-        run_agent_save_chat_summary,
-        run_agent_save_interview_prep,
-    )
     from boss_career_ops.commands.bridge import run_bridge_status, run_bridge_test
     from boss_career_ops.commands.skill_update import run_skill_update
     assert run_doctor is not None
@@ -93,8 +86,6 @@ def test_import_all_commands():
     assert run_pipeline_list is not None
     assert run_pipeline_dismiss is not None
     assert run_pipeline_restore is not None
-    assert run_agent_evaluate is not None
-    assert run_agent_save_evaluate is not None
     assert run_bridge_status is not None
     assert run_skill_update is not None
 
@@ -162,7 +153,7 @@ def test_version_consistency():
     expected = version_match.group(1)
 
     checks = {
-        "skills/boss-career-ops/skill.md": re.compile(r'skill_version:\s*"([^"]+)"'),
+        "skills/boss-career-ops/skill.md": re.compile(r'skill\\?_version:\s*"([^"]+)"'),
     }
 
     errors = []

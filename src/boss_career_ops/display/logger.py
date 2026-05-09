@@ -13,10 +13,17 @@ def _mask_value(value: str, visible: int = 4) -> str:
 
 
 def _mask_string_values(s: str) -> str:
-    for key in SENSITIVE_KEYS:
-        pattern = rf'({key}\s*[=:]\s*)(\S+)'
-        s = re.sub(pattern, rf'\1***', s, flags=re.IGNORECASE)
-    return s
+    parts = re.split(r'(%[srdiufeEgGxXoc])', s)
+    result = []
+    for i, part in enumerate(parts):
+        if i % 2 == 1:
+            result.append(part)
+        else:
+            for key in SENSITIVE_KEYS:
+                pattern = rf'({key}\s*[=:]\s*)(\S+)'
+                part = re.sub(pattern, rf'\1***', part, flags=re.IGNORECASE)
+            result.append(part)
+    return "".join(result)
 
 
 def mask_sensitive(data: Any) -> Any:
@@ -54,10 +61,17 @@ class SensitiveFilter(logging.Filter):
         return True
 
     def _mask_string(self, s: str) -> str:
-        for key in SENSITIVE_KEYS:
-            pattern = rf'({key}\s*[=:]\s*)(\S+)'
-            s = re.sub(pattern, rf'\1***', s, flags=re.IGNORECASE)
-        return s
+        parts = re.split(r'(%[srdiufeEgGxXoc])', s)
+        result = []
+        for i, part in enumerate(parts):
+            if i % 2 == 1:
+                result.append(part)
+            else:
+                for key in SENSITIVE_KEYS:
+                    pattern = rf'({key}\s*[=:]\s*)(\S+)'
+                    part = re.sub(pattern, rf'\1***', part, flags=re.IGNORECASE)
+                result.append(part)
+        return "".join(result)
 
 
 def get_logger(name: str = "boss_career_ops") -> logging.Logger:

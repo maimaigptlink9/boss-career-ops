@@ -43,7 +43,7 @@ class TestBossAdapterGetJobDetailResponseParsing:
         assert result is mock_job
 
     def test_returns_none_when_code_nonzero(self):
-        """code != 0 时返回 None"""
+        """code != 0 时触发降级链，所有降级失败返回 _risk_blocked Job"""
         adapter = BossAdapter.__new__(BossAdapter)
         adapter._client = MagicMock()
         adapter._auth = MagicMock()
@@ -53,12 +53,15 @@ class TestBossAdapterGetJobDetailResponseParsing:
             "code": 1,
             "message": "参数错误",
         }
+        adapter.get_job_card = MagicMock(return_value=None)
+        adapter._get_job_detail_via_browser = MagicMock(return_value=None)
 
         result = adapter.get_job_detail("sec456")
-        assert result is None
+        assert result is not None
+        assert result.raw_data.get("_risk_blocked") is True
 
     def test_returns_none_when_zpData_missing(self):
-        """code == 0 但 zpData 缺失时返回 None"""
+        """code == 0 但 zpData 缺失时触发降级链，所有降级失败返回 _risk_blocked Job"""
         adapter = BossAdapter.__new__(BossAdapter)
         adapter._client = MagicMock()
         adapter._auth = MagicMock()
@@ -68,12 +71,15 @@ class TestBossAdapterGetJobDetailResponseParsing:
             "code": 0,
             "message": "Success",
         }
+        adapter.get_job_card = MagicMock(return_value=None)
+        adapter._get_job_detail_via_browser = MagicMock(return_value=None)
 
         result = adapter.get_job_detail("sec789")
-        assert result is None
+        assert result is not None
+        assert result.raw_data.get("_risk_blocked") is True
 
     def test_does_not_use_ok_field(self):
-        """确认不再依赖 ok 字段——即使 ok=True 但 code!=0 也返回 None"""
+        """确认不再依赖 ok 字段——即使 ok=True 但 code!=0 也触发降级链"""
         adapter = BossAdapter.__new__(BossAdapter)
         adapter._client = MagicMock()
         adapter._auth = MagicMock()
@@ -84,9 +90,12 @@ class TestBossAdapterGetJobDetailResponseParsing:
             "code": 7,
             "message": "参数错误",
         }
+        adapter.get_job_card = MagicMock(return_value=None)
+        adapter._get_job_detail_via_browser = MagicMock(return_value=None)
 
         result = adapter.get_job_detail("sec_old_format")
-        assert result is None
+        assert result is not None
+        assert result.raw_data.get("_risk_blocked") is True
 
 
 # ============================================================
